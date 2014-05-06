@@ -143,7 +143,7 @@ Forthcoming
 
 ## Building
 
-You'll need to run `npm install` and then `sudo npm install grunt -g` if you don't have grunt installed already.
+You'll need to run `npm install` and then `sudo npm install grunt-cli -g` if you don't have grunt installed already.
 
 Then it's just `grunt`, or `grunt && grunt watch` if developing.
 
