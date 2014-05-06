@@ -75,7 +75,7 @@ It is up to you to specify the HTML/css for the tabs themselves, along with the 
 <body controller='WindowCtrl'>
   <!-- tabs go here -->
   <ul class='tabs-list'>
-    <li ng-repeat='tab in tabs.list()' ng-class="{active: tab.focused}">
+    <li ng-repeat='tab in docs.list()' ng-class="{active: tab.focused}">
       <a href="" ng-click="tab.focus()">{{tab.options.filename}}</a>
       <span ng-show="tab.loading">...</span>
       <a href="" ng-click="tab.close()">&times;</a>
