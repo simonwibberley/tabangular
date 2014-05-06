@@ -81,7 +81,7 @@ It is up to you to specify the HTML/css for the tabs themselves, along with the 
       <a href="" ng-click="tab.close()">&times;</a>
     </li>
     <li class='new-document'>
-      <a href="" ng-click="newDocument">new +</a>
+      <a href="" ng-click="newDocument()">new +</a>
     </li>
   </ul>
   
