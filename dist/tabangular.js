@@ -96,6 +96,7 @@
     function TabsProvider() {
       this._tabTypes = {};
       this._templateLoadCallbacks = {};
+      this._tabTypeFetcher = null;
       this.$get = [
         "$http", "$compile", "$controller", "$templateCache", (function(_this) {
           return function($http, $compile, $controller, $templateCache) {
@@ -144,6 +145,23 @@
       }
     };
 
+    TabsProvider.prototype.getTabType = function(id) {
+      var dfd;
+      dfd = $.Deferred();
+      if (this._tabTypes[id] != null) {
+        dfd.resolve(this._tabTypes[id]);
+      } else if (this._tabTypeFetcher != null) {
+        this._tabTypeFetcher(dfd, id);
+      } else {
+        dfd.resolve(null);
+      }
+      return dfd.promise();
+    };
+
+    TabsProvider.prototype.setTabTypeFetcher = function(_tabTypeFetcher) {
+      this._tabTypeFetcher = _tabTypeFetcher;
+    };
+
     return TabsProvider;
 
   })();
@@ -169,20 +187,29 @@
     };
 
     TabsService.prototype._compileContent = function(tab, parentScope, cb) {
-      var cached, doCompile, type, url, waiting;
-      if (typeof (type = tab.type) === 'string') {
-        type = this.provider._tabTypes[type];
-        if (type == null) {
-          throw new Error("Unrecognised tab type: " + Tab.type);
-        }
+      if (typeof tab.type === 'string') {
+        return this.provider.getTabType(tab.type).done((function(_this) {
+          return function(type) {
+            if (type == null) {
+              throw new Error("Unrecognised tab type: " + tab.type);
+            } else {
+              tab.type = type;
+              return _this.__compileContent(tab, parentScope, cb);
+            }
+          };
+        })(this));
       }
-      type = angular.extend({}, tabTypeDefaults, type);
+    };
+
+    TabsService.prototype.__compileContent = function(tab, parentScope, cb) {
+      var cached, doCompile, type, url, waiting;
+      type = angular.extend({}, tabTypeDefaults, tab.type);
       if (type.autoClose) {
         tab.on("close", function() {
           return tab.close(true);
         });
       }
-      tab._scope = type.scope ? parentScope.$new(true) : parentScope;
+      tab._scope = type.scope ? parentScope.$new(true) : parentScopedoCompile;
       doCompile = (function(_this) {
         return function(templateString) {
           _this._compileElem(tab, templateString, type.controller);
@@ -475,13 +502,7 @@
       scope: false,
       restrict: 'A',
       link: function($scope, $elem, $attrs) {
-        var area;
-        area = $scope.$eval($attrs.tabContent);
-        if (!(area instanceof TabArea)) {
-          throw new Error("'" + $attrs.tabContent + "' is not a tab area");
-        } else {
-          area._registerContentPane($scope, $elem);
-        }
+        area._registerContentPane($scope, $elem);
       }
     };
   });

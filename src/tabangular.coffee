@@ -70,6 +70,7 @@ class TabsProvider
   constructor: ->
     @_tabTypes = {}
     @_templateLoadCallbacks = {}
+    @_tabTypeFetcher = null
 
     @$get = [
       "$http", "$compile", "$controller", "$templateCache",
@@ -113,6 +114,20 @@ class TabsProvider
       @_tabTypes[id] = angular.extend {}, tabTypeDefaults, options
       # TODO: validate that we have enough information to decide how to compile
       # tabs
+  
+  getTabType: (id) ->
+    dfd = $.Deferred()
+    if @_tabTypes[id]?
+      dfd.resolve @_tabTypes[id]
+    else if @_tabTypeFetcher?
+      @_tabTypeFetcher dfd, id
+    else 
+      dfd.resolve null
+
+    dfd.promise()
+
+  setTabTypeFetcher: (@_tabTypeFetcher) ->
+
 
   
 
@@ -129,17 +144,23 @@ class TabsService
 
 
   _compileContent: (tab, parentScope, cb) ->
-    if typeof (type = tab.type) is 'string'
-      type = @provider._tabTypes[type]
-      if !type?
-        throw new Error "Unrecognised tab type: " + Tab.type
 
-    type = angular.extend {}, tabTypeDefaults, type
+    if typeof (tab.type) is 'string'
+      @provider.getTabType(tab.type).done((type) => 
+        if !type?
+          throw new Error "Unrecognised tab type: " + tab.type
+        else
+          tab.type = type
+          @__compileContent tab, parentScope, cb)
+        
+
+  __compileContent: (tab, parentScope, cb) ->
+    type = angular.extend {}, tabTypeDefaults, tab.type
 
     if type.autoClose
       tab.on "close", -> tab.close true
 
-    tab._scope = if type.scope then parentScope.$new(true) else parentScope
+    tab._scope = if type.scope then parentScope.$new(true) else parentScopedoCompile
     # maybe TODO: isolates and weird binding junk like directives
 
     # does the actual compilation once we found the template
@@ -359,11 +380,11 @@ tabangular.directive 'tabContent', ->
   scope: false
   restrict: 'A'
   link: ($scope, $elem, $attrs) ->
-    area = $scope.$eval $attrs.tabContent
-    if not (area instanceof TabArea)
-      throw new Error "'#{$attrs.tabContent}' is not a tab area" 
-    else
-      area._registerContentPane $scope, $elem
+    # area = $scope.$eval $attrs.tabContent
+    # if not (area instanceof TabArea)
+    #   throw new Error "'#{$attrs.tabContent}' is not a tab area" 
+    # else
+    area._registerContentPane $scope, $elem
     return
 
 
