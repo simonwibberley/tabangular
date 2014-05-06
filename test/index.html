@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="test">
+<head>
+    <meta charset="utf-8">
+    <title>tabangular test</title>
+    <script src='angular.min.js'></script>
+    <script src='../dist/tabangular.js'></script>
+    <script src='test.js'></script>
+</head>
+
+<body>
+  <script type='text/ng-template' id='main.html'>
+    <div>
+      <h1> {{options.title}} </h1>
+      
+      <ul class='tabs-list'>
+        <li ng-repeat='tab in tabs.list()' ng-class="{active: tab.focused}">
+          <a href="" ng-click="tab.focus()">{{tab.options.title}}</a>
+          <span ng-show="tab.loading">...</span>
+          <a href="" ng-click="tab.close()">&times;</a>
+        </li>
+      </ul>
+
+      <div class="tabs-content" tab-content="tabs">
+
+      </div>
+
+      <input type="text" ng-model="inputTitle" placeholder="title" />
+      <button ng-click="openInput(inputTitle)">Input</button>
+      <button ng-click="openDynamic(inputTitle)">Dynamic</button>
+      <button ng-click="openNested(inputTitle)">Nested</button>
+    </div>
+  </script>
+
+  <div ng-controller='MainCtrl'>
+    <h1> {{options.title}} </h1>
+    
+    <ul class='tabs-list'>
+      <li ng-repeat='tab in tabs.list()' ng-class="{active: tab.focused}">
+        <a href="" ng-click="tab.focus()">{{tab.options.title}}</a>
+        <span ng-show="tab.loading">...</span>
+        <a href="" ng-click="tab.close()">&times;</a>
+      </li>
+    </ul>
+
+    <div class="tabs-content" tab-content="tabs">
+
+    </div>
+
+    <input type="text" ng-model="inputTitle" placeholder="title" />
+    <button ng-click="openInput(inputTitle)">Input</button>
+    <button ng-click="openDynamic(inputTitle)">Dynamic</button>
+    <button ng-click="openNested(inputTitle)">Nested</button>
+  </div>
+
+</body>
+</html>
