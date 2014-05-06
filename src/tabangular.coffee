@@ -160,7 +160,7 @@ class TabsService
     if type.autoClose
       tab.on "close", -> tab.close true
 
-    tab._scope = if type.scope then parentScope.$new(true) else parentScopedoCompile
+    tab._scope = if type.scope then parentScope.$new(true) else parentScope
     # maybe TODO: isolates and weird binding junk like directives
 
     # does the actual compilation once we found the template

@@ -209,7 +209,7 @@
           return tab.close(true);
         });
       }
-      tab._scope = type.scope ? parentScope.$new(true) : parentScopedoCompile;
+      tab._scope = type.scope ? parentScope.$new(true) : parentScope;
       doCompile = (function(_this) {
         return function(templateString) {
           _this._compileElem(tab, templateString, type.controller);
