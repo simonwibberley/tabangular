@@ -137,6 +137,12 @@ Tab templates should not use ng-controller
 <button ng-click='save()'>Save</button>
 ```
 
+Persistence may be achieved by passing options to `Tabs.newArea`. There is a default `localStorage` persistence option which can be enabled by giving a string id to the tab area
+
+```javascript
+$scope.docs = Tabs.newArea({id: "myEditor"});
+```
+
 ## API
 
 Forthcoming
