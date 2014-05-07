@@ -502,7 +502,13 @@
       scope: false,
       restrict: 'A',
       link: function($scope, $elem, $attrs) {
-        area._registerContentPane($scope, $elem);
+        var area;
+        area = $scope.$eval($attrs.tabContent);
+        if (!(area instanceof TabArea)) {
+          throw new Error("'" + $attrs.tabContent + "' is not a tab area");
+        } else {
+          area._registerContentPane($scope, $elem);
+        }
       }
     };
   });

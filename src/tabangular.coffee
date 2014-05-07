@@ -205,6 +205,8 @@ class TabsService
 
 
 
+
+
 class Tab extends Evented
   constructor: (@area, @type, @options) ->
     super()
@@ -380,11 +382,11 @@ tabangular.directive 'tabContent', ->
   scope: false
   restrict: 'A'
   link: ($scope, $elem, $attrs) ->
-    # area = $scope.$eval $attrs.tabContent
-    # if not (area instanceof TabArea)
-    #   throw new Error "'#{$attrs.tabContent}' is not a tab area" 
-    # else
-    area._registerContentPane $scope, $elem
+    area = $scope.$eval $attrs.tabContent
+    if not (area instanceof TabArea)
+      throw new Error "'#{$attrs.tabContent}' is not a tab area" 
+    else
+      area._registerContentPane $scope, $elem
     return
 
 
