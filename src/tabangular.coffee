@@ -73,9 +73,9 @@ class TabsProvider
     @_tabTypeFetcher = null
 
     @$get = [
-      "$http", "$compile", "$controller", "$templateCache",
-      ($http, $compile, $controller, $templateCache) =>
-        new TabsService @, $http, $compile, $controller, $templateCache
+      "$http", "$compile", "$controller", "$templateCache", "$q"
+      ($http, $compile, $controller, $templateCache, $q) =>
+        new TabsService @, $http, $compile, $controller, $templateCache, $q
     ]
 
   ###*
@@ -111,29 +111,36 @@ class TabsProvider
     if @_tabTypes[id]?
       throw new Error "duplicate tab type '#{id}'"
     else
-      @_tabTypes[id] = angular.extend {}, tabTypeDefaults, options
+      @_tabTypes[id] = defaults options
       # TODO: validate that we have enough information to decide how to compile
       # tabs
   
-  getTabType: (id) ->
-    dfd = $.Deferred()
-    if @_tabTypes[id]?
-      dfd.resolve @_tabTypes[id]
-    else if @_tabTypeFetcher?
-      @_tabTypeFetcher dfd, id
-    else 
-      dfd.resolve null
-
-    dfd.promise()
+  tabTypeDefaults: (options) -> 
+    angular.extend {}, tabTypeDefaults, options
 
   setTabTypeFetcher: (@_tabTypeFetcher) ->
 
 
-  
 
+  
 class TabsService
-  constructor: (@provider, @$http, @$compile, @$controller, @$templateCache) ->
+  constructor: (@provider, @$http, @$compile, @$controller, @$templateCache, @$q) ->
+
+  _getTabType: (id) ->
     
+    if @provider._tabTypes[id]?
+      promise = @$q.when(@provider._tabTypes[id])
+    else if @provider._tabTypeFetcher?
+      deferred = @$q.defer()
+      @provider._tabTypeFetcher deferred, id
+      @provider._tabTypes[id] = deferred.promise
+      promise = deferred.promise
+    else 
+      promise = @$q.when(null)
+
+    promise
+
+
   # takes template and ctrl and does angular magic to create a DOM node, puts it
   # in tab._elem and adds the tabangular-hide class
   _compileElem: (tab, templateString, ctrl) ->
@@ -146,21 +153,19 @@ class TabsService
   _compileContent: (tab, parentScope, cb) ->
 
     if typeof (tab.type) is 'string'
-      @provider.getTabType(tab.type).done((type) => 
+      @_getTabType(tab.type).then((type) => 
         if !type?
           throw new Error "Unrecognised tab type: " + tab.type
         else
-          tab.type = type
-          @__compileContent tab, parentScope, cb)
+          @__compileContent tab, parentScope, cb, type)
         
 
-  __compileContent: (tab, parentScope, cb) ->
-    type = angular.extend {}, tabTypeDefaults, tab.type
-
+  __compileContent: (tab, parentScope, cb, type) ->
+    
     if type.autoClose
       tab.on "close", -> tab.close true
 
-    tab._scope = if type.scope then parentScope.$new(true) else parentScope
+    tab._scope = if type.scope then parentScope.$new() else parentScope
     # maybe TODO: isolates and weird binding junk like directives
 
     # does the actual compilation once we found the template
@@ -217,12 +222,13 @@ class Tab extends Evented
     @_elem = null
     @_scope = null
 
+
   deferLoading: ->
     @loadingDeferred = true
 
   doneLoading: ->
     @loading = false
-    @area._scope.$$phase or @area._scope.$apply()
+    @area._scope.$root.$$phase or @area._scope.$apply()
     if not @closed
       @trigger 'loaded'
 
@@ -257,6 +263,7 @@ class Tab extends Evented
             @area._tabs[0].focus()
 
           @focused = false
+    @ 
 
   focus: ->
     if @loading
@@ -277,6 +284,8 @@ class Tab extends Evented
       @area._persist()
 
       @trigger "focused"
+    @
+
 
 
 DEFAULT_TAB_AREA_OPTIONS =
@@ -318,6 +327,11 @@ class TabArea extends Evented
     @_contentPane = null
     @_scope = null
 
+
+    @on "_attach", (data) =>
+      if data.event is "loaded" and @_contentPane?
+        data.callback()
+
   # saves the junk to the place
   _persist: ->
     @options.persist? JSON.stringify @_tabs.map (tab) ->
@@ -344,6 +358,7 @@ class TabArea extends Evented
     
     cb() for cb in @_readyQueue
     @_readyQueue = []
+    @trigger "loaded"
 
   _createTab: (tabType, options) ->
     tab = new Tab @, tabType, options 
