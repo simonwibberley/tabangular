@@ -111,7 +111,7 @@ class TabsProvider
     if @_tabTypes[id]?
       throw new Error "duplicate tab type '#{id}'"
     else
-      @_tabTypes[id] = defaults options
+      @_tabTypes[id] = tabTypeDefaults options
       # TODO: validate that we have enough information to decide how to compile
       # tabs
   

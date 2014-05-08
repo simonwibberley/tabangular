@@ -141,7 +141,7 @@
       if (this._tabTypes[id] != null) {
         throw new Error("duplicate tab type '" + id + "'");
       } else {
-        return this._tabTypes[id] = defaults(options);
+        return this._tabTypes[id] = tabTypeDefaults(options);
       }
     };
 
