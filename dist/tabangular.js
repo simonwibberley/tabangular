@@ -96,10 +96,11 @@
     function TabsProvider() {
       this._tabTypes = {};
       this._templateLoadCallbacks = {};
+      this._tabTypeFetcher = null;
       this.$get = [
-        "$http", "$compile", "$controller", "$templateCache", (function(_this) {
-          return function($http, $compile, $controller, $templateCache) {
-            return new TabsService(_this, $http, $compile, $controller, $templateCache);
+        "$http", "$compile", "$controller", "$templateCache", "$q", (function(_this) {
+          return function($http, $compile, $controller, $templateCache, $q) {
+            return new TabsService(_this, $http, $compile, $controller, $templateCache, $q);
           };
         })(this)
       ];
@@ -140,8 +141,16 @@
       if (this._tabTypes[id] != null) {
         throw new Error("duplicate tab type '" + id + "'");
       } else {
-        return this._tabTypes[id] = angular.extend({}, tabTypeDefaults, options);
+        return this._tabTypes[id] = tabTypeDefaults(options);
       }
+    };
+
+    TabsProvider.prototype.tabTypeDefaults = function(options) {
+      return angular.extend({}, tabTypeDefaults, options);
+    };
+
+    TabsProvider.prototype.setTabTypeFetcher = function(_tabTypeFetcher) {
+      this._tabTypeFetcher = _tabTypeFetcher;
     };
 
     return TabsProvider;
@@ -149,13 +158,29 @@
   })();
 
   TabsService = (function() {
-    function TabsService(provider, $http, $compile, $controller, $templateCache) {
+    function TabsService(provider, $http, $compile, $controller, $templateCache, $q) {
       this.provider = provider;
       this.$http = $http;
       this.$compile = $compile;
       this.$controller = $controller;
       this.$templateCache = $templateCache;
+      this.$q = $q;
     }
+
+    TabsService.prototype._getTabType = function(id) {
+      var deferred, promise;
+      if (this.provider._tabTypes[id] != null) {
+        promise = this.$q.when(this.provider._tabTypes[id]);
+      } else if (this.provider._tabTypeFetcher != null) {
+        deferred = this.$q.defer();
+        this.provider._tabTypeFetcher(deferred, id);
+        this.provider._tabTypes[id] = deferred.promise;
+        promise = deferred.promise;
+      } else {
+        promise = this.$q.when(null);
+      }
+      return promise;
+    };
 
     TabsService.prototype._compileElem = function(tab, templateString, ctrl) {
       if (ctrl != null) {
@@ -169,20 +194,27 @@
     };
 
     TabsService.prototype._compileContent = function(tab, parentScope, cb) {
-      var cached, doCompile, type, url, waiting;
-      if (typeof (type = tab.type) === 'string') {
-        type = this.provider._tabTypes[type];
-        if (type == null) {
-          throw new Error("Unrecognised tab type: " + Tab.type);
-        }
+      if (typeof tab.type === 'string') {
+        return this._getTabType(tab.type).then((function(_this) {
+          return function(type) {
+            if (type == null) {
+              throw new Error("Unrecognised tab type: " + tab.type);
+            } else {
+              return _this.__compileContent(tab, parentScope, cb, type);
+            }
+          };
+        })(this));
       }
-      type = angular.extend({}, tabTypeDefaults, type);
+    };
+
+    TabsService.prototype.__compileContent = function(tab, parentScope, cb, type) {
+      var cached, doCompile, url, waiting;
       if (type.autoClose) {
         tab.on("close", function() {
           return tab.close(true);
         });
       }
-      tab._scope = type.scope ? parentScope.$new(true) : parentScope;
+      tab._scope = type.scope ? parentScope.$new() : parentScope;
       doCompile = (function(_this) {
         return function(templateString) {
           _this._compileElem(tab, templateString, type.controller);
@@ -257,7 +289,7 @@
 
     Tab.prototype.doneLoading = function() {
       this.loading = false;
-      this.area._scope.$$phase || this.area._scope.$apply();
+      this.area._scope.$root.$$phase || this.area._scope.$apply();
       if (!this.closed) {
         return this.trigger('loaded');
       }
@@ -268,7 +300,7 @@
       if (this.closed) {
         throw new Error("Tab already closed");
       } else if (!silent) {
-        return this.trigger("close");
+        this.trigger("close");
       } else {
         removeFromArray(this.area._tabs, this);
         removeFromArray(this.area._focusStack, this);
@@ -287,16 +319,17 @@
             } else if (this.area._tabs.length !== 0) {
               this.area._tabs[0].focus();
             }
-            return this.focused = false;
+            this.focused = false;
           }
         }
       }
+      return this;
     };
 
     Tab.prototype.focus = function() {
       var current, len;
       if (this.loading) {
-        return this.on("loaded", (function(_this) {
+        this.on("loaded", (function(_this) {
           return function() {
             return _this.focus();
           };
@@ -314,8 +347,9 @@
         removeFromArray(this.area._focusStack, this);
         this.area._focusStack.push(this);
         this.area._persist();
-        return this.trigger("focused");
+        this.trigger("focused");
       }
+      return this;
     };
 
     return Tab;
@@ -369,6 +403,13 @@
       this._readyQueue = [];
       this._contentPane = null;
       this._scope = null;
+      this.on("_attach", (function(_this) {
+        return function(data) {
+          if (data.event === "loaded" && (_this._contentPane != null)) {
+            return data.callback();
+          }
+        };
+      })(this));
     }
 
     TabArea.prototype._persist = function() {
@@ -415,7 +456,8 @@
         cb = _ref[_i];
         cb();
       }
-      return this._readyQueue = [];
+      this._readyQueue = [];
+      return this.trigger("loaded");
     };
 
     TabArea.prototype._createTab = function(tabType, options) {
