@@ -64,7 +64,6 @@ class Evented
 
 tabTypeDefaults =
   scope: true
-  autoClose: true
 
 class TabsProvider
   constructor: ->
@@ -86,12 +85,6 @@ class TabsProvider
   #     scope: boolean
   #        specifies whether or not to define a new scope for
   #        tabs of this type. defaults to true
-  #     autoClose: boolean
-  #        specifies whether or not tab.close() should
-  #        automatically close the tab. Otherwise it simply
-  #        triggers a 'close' event. tab.close(true) can be used
-  #        to force a close.
-  #        defaults to true.
   #     templateURL: string
   #        specifies a url from which to load a template
   #     templateString: string
@@ -161,10 +154,6 @@ class TabsService
         
 
   __compileContent: (tab, parentScope, cb, type) ->
-    
-    if type.autoClose
-      tab.on "close", -> tab.close true
-
     tab._scope = if type.scope then parentScope.$new() else parentScope
     # maybe TODO: isolates and weird binding junk like directives
 
@@ -263,7 +252,15 @@ class Tab extends Evented
             @area._tabs[0].focus()
 
           @focused = false
-    @ 
+    @
+
+  enableAutoClose: ->
+    if !@_offAutoClose?
+      @_offAutoClose = @on "close", => @close true
+
+  disableAutoClose: ->
+    @_offAutoClose?()
+    delete @_offAutoClose
 
   focus: ->
     if @loading

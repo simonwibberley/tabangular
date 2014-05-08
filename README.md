@@ -143,6 +143,8 @@ Persistence may be achieved by passing options to `Tabs.newArea`. There is a def
 $scope.docs = Tabs.newArea({id: "myEditor"});
 ```
 
+Alternatively, provide `persist` and `getExisting` functions to 
+
 ## API
 
 Forthcoming
