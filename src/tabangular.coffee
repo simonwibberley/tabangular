@@ -210,6 +210,7 @@ class Tab extends Evented
     @focused = false
     @_elem = null
     @_scope = null
+    @enableAutoClose()
 
 
   deferLoading: ->
