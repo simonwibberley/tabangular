@@ -211,7 +211,9 @@ class Tab extends Evented
     @_elem = null
     @_scope = null
     @enableAutoClose()
-
+    @on "_attach", (data) =>
+      if data.event is "loaded" and not @loading
+        data.callback()
 
   deferLoading: ->
     @loadingDeferred = true
