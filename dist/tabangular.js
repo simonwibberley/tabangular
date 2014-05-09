@@ -88,8 +88,7 @@
   })();
 
   tabTypeDefaults = {
-    scope: true,
-    autoClose: true
+    scope: true
   };
 
   TabsProvider = (function() {
@@ -115,12 +114,6 @@
      *     scope: boolean
      *        specifies whether or not to define a new scope for
      *        tabs of this type. defaults to true
-     *     autoClose: boolean
-     *        specifies whether or not tab.close() should
-     *        automatically close the tab. Otherwise it simply
-     *        triggers a 'close' event. tab.close(true) can be used
-     *        to force a close.
-     *        defaults to true.
      *     templateURL: string
      *        specifies a url from which to load a template
      *     templateString: string
@@ -209,11 +202,6 @@
 
     TabsService.prototype.__compileContent = function(tab, parentScope, cb, type) {
       var cached, doCompile, url, waiting;
-      if (type.autoClose) {
-        tab.on("close", function() {
-          return tab.close(true);
-        });
-      }
       tab._scope = type.scope ? parentScope.$new() : parentScope;
       doCompile = (function(_this) {
         return function(templateString) {
@@ -281,6 +269,14 @@
       this.focused = false;
       this._elem = null;
       this._scope = null;
+      this.enableAutoClose();
+      this.on("_attach", (function(_this) {
+        return function(data) {
+          if (data.event === "loaded" && !_this.loading) {
+            return data.callback();
+          }
+        };
+      })(this));
     }
 
     Tab.prototype.deferLoading = function() {
@@ -324,6 +320,23 @@
         }
       }
       return this;
+    };
+
+    Tab.prototype.enableAutoClose = function() {
+      if (this._offAutoClose == null) {
+        return this._offAutoClose = this.on("close", (function(_this) {
+          return function() {
+            return _this.close(true);
+          };
+        })(this));
+      }
+    };
+
+    Tab.prototype.disableAutoClose = function() {
+      if (typeof this._offAutoClose === "function") {
+        this._offAutoClose();
+      }
+      return delete this._offAutoClose;
     };
 
     Tab.prototype.focus = function() {
