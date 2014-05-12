@@ -21,8 +21,14 @@ test.config(function (TabsProvider) {
 function NestedCtrl ($scope, Tabs, Tab) {
   $scope.options = (Tab && Tab.options) || {title: "Main Page"};
   $scope.tabs = Tabs.newArea({id: $scope.options.title});
+  $scope.tabs2 = Tabs.newArea({id: $scope.options.title + "2"});
 
   $scope.tabs.handleExisting(function (tab) {
+    console.log(tab, tab.type === 'input');
+    return tab.type === 'input';
+  });
+
+  $scope.tabs2.handleExisting(function (tab) {
     console.log(tab);
     return tab.type === 'input';
   });

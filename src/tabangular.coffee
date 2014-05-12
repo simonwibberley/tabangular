@@ -1,5 +1,6 @@
-###* License: http://www.apache.org/licenses/LICENSE-2.0
- # Copyright (c) 2014 David Sheldrick
+###*
+# License: http://www.apache.org/licenses/LICENSE-2.0
+# Copyright (c) 2014 David Sheldrick
 ###
 
 tabangular = angular.module "tabangular", []
@@ -287,6 +288,20 @@ class Tab extends Evented
       @trigger "focused"
     @
 
+  move: (toArea, idx) ->
+    removeFromArray @area._tabs, @
+
+    if toArea isnt @area
+      removeFromArray @area._focusStack, @
+      toArea._contentPane.appendChild @_elem
+      @area = toArea
+
+    idx = Math.min Math.max(0, idx), @area._tabs.length
+
+    @area._tabs.splice idx, 0, @
+    if @focused 
+      @focused = false
+      @focus()
 
 
 DEFAULT_TAB_AREA_OPTIONS =
@@ -321,6 +336,7 @@ class TabArea extends Evented
       @_existingReady = true
       @_existingTabs = JSON.parse(json).map (tab) =>
         tab.options = @options.parseOptions tab.options
+        tab
       cb() for cb in @_existingReadyQueue
       @_existingReadyQueue = []
 
@@ -340,10 +356,12 @@ class TabArea extends Evented
 
   # saves the junk to the place
   _persist: ->
-    @options.persist? JSON.stringify @_tabs.map (tab) =>
-      type: tab.type
-      options: @options.transformOptions tab.options
-      active: !!tab.focused
+    @options.persist? JSON.stringify(
+      @_tabs.filter((tab) -> not tab.loading).map (tab) =>
+        type: tab.type
+        options: @options.transformOptions tab.options
+        active: !!tab.focused
+    )
 
   # calls cb on existing tabs like {type, options, active}. if cb returns
   # true, automatically reloads tab by calling @load(type, options)

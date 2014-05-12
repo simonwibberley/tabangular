@@ -2,6 +2,14 @@
 
 Dynamic persistent tabbed content for angular.js
 
+## Data model
+
+Tabs are 'typed'. A tab type specifies the template and (optionally) controller used to compile the DOM element which represents the tab's content. Each tab has a unique content element which is shown while the tab is in 'focus'.
+
+Tabs are grouped into 'areas'. A tab area represents a flat array of tabs, of which only one can be focused at a time. Tabs can be parameterised by providing an 'options' object when they are created.
+
+Both tabs and tab areas provide a simple events system for communication with 
+
 ## Usage
 
 Include `'tabangular'` in your module dependencies
@@ -19,10 +27,7 @@ textEditor.config(function (TabsProvider) {
     // you can supply a url from which to fetch the template
     templateURL: 'templates/editor.html',
     // controllers are resolved as usual
-    controller: 'EditorCtrl',
-    // you can interrupt tab close events to prompt the user to save their work
-    // or whatever by setting autoClose to false (it defaults to true)
-    autoClose: false
+    controller: 'EditorCtrl'
   });
 
   TabsProvider.registerTabType("configTab", {

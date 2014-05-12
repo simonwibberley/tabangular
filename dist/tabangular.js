@@ -1,6 +1,7 @@
 
-/** License: http://www.apache.org/licenses/LICENSE-2.0
-  * Copyright (c) 2014 David Sheldrick
+/**
+ * License: http://www.apache.org/licenses/LICENSE-2.0
+ * Copyright (c) 2014 David Sheldrick
  */
 
 (function() {
@@ -374,6 +375,21 @@
       return this;
     };
 
+    Tab.prototype.move = function(toArea, idx) {
+      removeFromArray(this.area._tabs, this);
+      if (toArea !== this.area) {
+        removeFromArray(this.area._focusStack, this);
+        toArea._contentPane.appendChild(this._elem);
+        this.area = toArea;
+      }
+      idx = Math.min(Math.max(0, idx), this.area._tabs.length);
+      this.area._tabs.splice(idx, 0, this);
+      if (this.focused) {
+        this.focused = false;
+        return this.focus();
+      }
+    };
+
     return Tab;
 
   })(Evented);
@@ -417,7 +433,8 @@
             var cb, _i, _len, _ref;
             _this._existingReady = true;
             _this._existingTabs = JSON.parse(json).map(function(tab) {
-              return tab.options = _this.options.parseOptions(tab.options);
+              tab.options = _this.options.parseOptions(tab.options);
+              return tab;
             });
             _ref = _this._existingReadyQueue;
             for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -444,7 +461,9 @@
 
     TabArea.prototype._persist = function() {
       var _base;
-      return typeof (_base = this.options).persist === "function" ? _base.persist(JSON.stringify(this._tabs.map((function(_this) {
+      return typeof (_base = this.options).persist === "function" ? _base.persist(JSON.stringify(this._tabs.filter(function(tab) {
+        return !tab.loading;
+      }).map((function(_this) {
         return function(tab) {
           return {
             type: tab.type,
