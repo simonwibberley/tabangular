@@ -1,5 +1,6 @@
-# License: http://www.apache.org/licenses/LICENSE-2.0
-# Copyright (c) 2014 David Sheldrick
+###* License: http://www.apache.org/licenses/LICENSE-2.0
+ # Copyright (c) 2014 David Sheldrick
+###
 
 tabangular = angular.module "tabangular", []
 
@@ -73,7 +74,7 @@ class TabsProvider
 
     @$get = [
       "$http", "$compile", "$controller", "$templateCache", "$q", "$injector"
-      ($http, $compile, $controller, $templateCache, $q) =>
+      ($http, $compile, $controller, $templateCache, $q, $injector) =>
         new TabsService @, $http, $compile, $controller, $templateCache, $q, $injector
     ]
 
@@ -104,12 +105,9 @@ class TabsProvider
     if @_tabTypes[id]?
       throw new Error "duplicate tab type '#{id}'"
     else
-      @_tabTypes[id] = tabTypeDefaults options
+      @_tabTypes[id] = options
       # TODO: validate that we have enough information to decide how to compile
       # tabs
-  
-  tabTypeDefaults: (options) -> 
-    angular.extend {}, tabTypeDefaults, options
 
   setTabTypeFetcher: (@_tabTypeFetcher) ->
 
@@ -127,7 +125,7 @@ class TabsService
     else if @provider._tabTypeFetcher?
       deferred = @$q.defer()
       injectables = {deferred: deferred, typeID: id}
-      @$injector.inject @provider._tabTypeFetcher, null, injectables
+      @$injector.invoke @provider._tabTypeFetcher, null, injectables
       @provider._tabTypes[id] = deferred.promise
       promise = deferred.promise
     else 
@@ -153,9 +151,13 @@ class TabsService
           throw new Error "Unrecognised tab type: " + tab.type
         else
           @__compileContent tab, parentScope, cb, type)
+    else
+      @__compileContent tab, parentScope, cb, tab.type
+
         
 
   __compileContent: (tab, parentScope, cb, type) ->
+    type = angular.extend {}, tabTypeDefaults, type
     tab._scope = if type.scope then parentScope.$new() else parentScope
     # maybe TODO: isolates and weird binding junk like directives
 
@@ -198,9 +200,6 @@ class TabsService
 
   newArea: (options) ->
     new TabArea @, options
-
-
-
 
 
 class Tab extends Evented
@@ -298,6 +297,10 @@ DEFAULT_TAB_AREA_OPTIONS =
     if @id? and (json = window.localStorage["tabangular:" + @id])?
       cb(json)
 
+  transformOptions: (options) -> options
+
+  parseOptions: (options) -> options
+
 
 class TabArea extends Evented
   constructor: (@_service, @options={}) ->
@@ -314,7 +317,8 @@ class TabArea extends Evented
     # initiate loading of existing tabs
     @options.getExisting? (json) =>
       @_existingReady = true
-      @_existingTabs = JSON.parse json
+      @_existingTabs = JSON.parse(json).map (tab) =>
+        tab.options = @options.parseOptions tab.options
       cb() for cb in @_existingReadyQueue
       @_existingReadyQueue = []
 
@@ -334,9 +338,9 @@ class TabArea extends Evented
 
   # saves the junk to the place
   _persist: ->
-    @options.persist? JSON.stringify @_tabs.map (tab) ->
+    @options.persist? JSON.stringify @_tabs.map (tab) =>
       type: tab.type
-      options: tab.options
+      options: @options.transformOptions tab.options
       active: !!tab.focused
 
   # calls cb on existing tabs like {type, options, active}. if cb returns

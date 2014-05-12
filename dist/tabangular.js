@@ -1,3 +1,8 @@
+
+/** License: http://www.apache.org/licenses/LICENSE-2.0
+  * Copyright (c) 2014 David Sheldrick
+ */
+
 (function() {
   var DEFAULT_TAB_AREA_OPTIONS, Evented, Tab, TabArea, TabsProvider, TabsService, attach, removeFromArray, tabTypeDefaults, tabangular,
     __hasProp = {}.hasOwnProperty,
@@ -98,7 +103,7 @@
       this._tabTypeFetcher = null;
       this.$get = [
         "$http", "$compile", "$controller", "$templateCache", "$q", "$injector", (function(_this) {
-          return function($http, $compile, $controller, $templateCache, $q) {
+          return function($http, $compile, $controller, $templateCache, $q, $injector) {
             return new TabsService(_this, $http, $compile, $controller, $templateCache, $q, $injector);
           };
         })(this)
@@ -134,12 +139,8 @@
       if (this._tabTypes[id] != null) {
         throw new Error("duplicate tab type '" + id + "'");
       } else {
-        return this._tabTypes[id] = tabTypeDefaults(options);
+        return this._tabTypes[id] = options;
       }
-    };
-
-    TabsProvider.prototype.tabTypeDefaults = function(options) {
-      return angular.extend({}, tabTypeDefaults, options);
     };
 
     TabsProvider.prototype.setTabTypeFetcher = function(_tabTypeFetcher) {
@@ -171,7 +172,7 @@
           deferred: deferred,
           typeID: id
         };
-        this.$injector.inject(this.provider._tabTypeFetcher, null, injectables);
+        this.$injector.invoke(this.provider._tabTypeFetcher, null, injectables);
         this.provider._tabTypes[id] = deferred.promise;
         promise = deferred.promise;
       } else {
@@ -202,11 +203,14 @@
             }
           };
         })(this));
+      } else {
+        return this.__compileContent(tab, parentScope, cb, tab.type);
       }
     };
 
     TabsService.prototype.__compileContent = function(tab, parentScope, cb, type) {
       var cached, doCompile, url, waiting;
+      type = angular.extend({}, tabTypeDefaults, type);
       tab._scope = type.scope ? parentScope.$new() : parentScope;
       doCompile = (function(_this) {
         return function(templateString) {
@@ -379,6 +383,12 @@
       if ((this.id != null) && ((json = window.localStorage["tabangular:" + this.id]) != null)) {
         return cb(json);
       }
+    },
+    transformOptions: function(options) {
+      return options;
+    },
+    parseOptions: function(options) {
+      return options;
     }
   };
 
@@ -399,7 +409,9 @@
           return function(json) {
             var cb, _i, _len, _ref;
             _this._existingReady = true;
-            _this._existingTabs = JSON.parse(json);
+            _this._existingTabs = JSON.parse(json).map(function(tab) {
+              return tab.options = _this.options.parseOptions(tab.options);
+            });
             _ref = _this._existingReadyQueue;
             for (_i = 0, _len = _ref.length; _i < _len; _i++) {
               cb = _ref[_i];
@@ -425,13 +437,15 @@
 
     TabArea.prototype._persist = function() {
       var _base;
-      return typeof (_base = this.options).persist === "function" ? _base.persist(JSON.stringify(this._tabs.map(function(tab) {
-        return {
-          type: tab.type,
-          options: tab.options,
-          active: !!tab.focused
+      return typeof (_base = this.options).persist === "function" ? _base.persist(JSON.stringify(this._tabs.map((function(_this) {
+        return function(tab) {
+          return {
+            type: tab.type,
+            options: _this.options.transformOptions(tab.options),
+            active: !!tab.focused
+          };
         };
-      }))) : void 0;
+      })(this)))) : void 0;
     };
 
     TabArea.prototype.handleExisting = function(cb) {

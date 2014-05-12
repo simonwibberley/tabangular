@@ -5,6 +5,17 @@ test.config(function (TabsProvider) {
     templateURL: 'templates/input.html',
     controller: 'InputCtrl'
   });
+
+  TabsProvider.setTabTypeFetcher(function ($window, deferred, typeID) {
+    if (typeID === 'fetched') {
+      $window.setTimeout(function () {
+        deferred.resolve({
+          templateString: '<h4>This junk was resolved: {{options.title}}</h4>',
+          scope: false
+        });
+      })
+    }
+  });
 });
 
 function NestedCtrl ($scope, Tabs, Tab) {
@@ -20,8 +31,13 @@ function NestedCtrl ($scope, Tabs, Tab) {
     $scope.tabs.open('input', {title: title})
   };
 
+  $scope.openFetched = function () {
+    $scope.tabs.open('fetched', {title: 'fetched'});
+  };
+
   $scope.openDynamic = function (name) {
     var ctrl = function ($scope, Tab) {
+      Tab.disableAutoClose();
       var off = null;
 
 
@@ -55,7 +71,6 @@ function NestedCtrl ($scope, Tabs, Tab) {
                  + "</div>";
 
     $scope.tabs.open({
-      autoClose: false,
       controller: ctrl,
       templateString: template 
     }, {title: name});
