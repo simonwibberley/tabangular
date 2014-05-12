@@ -2,15 +2,21 @@
 
 Dynamic persistent tabbed content for angular.js
 
-## Data model
+## Tabs...
 
-Tabs are 'typed'. A tab type specifies the template and (optionally) controller used to compile the DOM element which represents the tab's content. Each tab has a unique content element which is shown while the tab is in 'focus'. By default, tabs are given new scopes which inherit from their parent scope.
+- are 'typed'. A tab type specifies the template and (optionally) controller used to compile the DOM element which represents the tab's content.
 
-Tabs are arranged by 'areas'. A tab area represents a flat array of tabs, of which only one can be focused at a time. Tabs can be parameterised by providing an 'options' object when they are created.
+- each have a unique content element which is shown while the tab is in 'focus'. By default, tabs are given new scopes which inherit from their parent scope.
 
-Tabs provide a simple events system for communicating with their instantiators.
+- are arranged by 'areas'. A tab area represents a flat array of tabs, of which only one can be focused at a time.
 
-Tabs are optionally persisted on a per-area basis. This is done by serializing an array of the open tabs along with their `options` objects.
+- can be moved to different areas, or to a different location in the same area.
+
+- can be parameterised by providing an `options` object when they are created.
+
+- provide a simple events system for communicating with their instantiators.
+
+- are optionally persisted on a per-area basis. This is done by serializing an array of the open tabs along with their `options` objects.
 
 ## Usage
 
@@ -122,7 +128,7 @@ It is up to you to specify the HTML/css for the tabs themselves, along with the 
   </ul>
   
   <div class="tabs-content" tab-content="docs">
-    <!-- content gets put in here -->
+    <!-- the tab-content value should evaluate to the relevant TabArea object -->
   </div>
 
   <button ng-click="config()">Configure the Editor</button>
@@ -147,9 +153,10 @@ function EditorCtrl ($scope, $http, Tab) {
   }
 ```
 
-They can also intercept the 'close' event
+They can also intercept the `'close'` event, which gets fired when `Tab.close()` is called, but not when `Tab.close(true)` is called. 
 
 ```javascript
+  Tab.disableAutoClose();
   Tab.on("close", function () {
     if ($scope.text === Tab.options.savedText
         || window.confirm("You have unsaved changes. Are you sure?")) {

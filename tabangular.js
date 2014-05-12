@@ -1,5 +1,6 @@
 
 /**
+ * Tabangular.js v1.0.0
  * License: http://www.apache.org/licenses/LICENSE-2.0
  * Copyright (c) 2014 David Sheldrick
  */

@@ -5,9 +5,12 @@ module.exports = (grunt) ->
     coffee:
       options:
         sourceMap: true
-      'dist/tabangular.js': 'src/tabangular.coffee'
+      'tabangular.js': 'tabangular.coffee'
     uglify:
-      'dist/tabangular.min.js' : 'dist/tabangular.js'
+      'tabangular.min.js' : 'tabangular.js'
+      options:
+        sourceMapIn : 'tabangular.js.map'
+        sourceMap : true
     watch:
       files: ["src/tabangular.coffee"]
       tasks: ["coffee","uglify"]
