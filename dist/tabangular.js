@@ -279,6 +279,13 @@
       this._elem = null;
       this._scope = null;
       this.enableAutoClose();
+      this.on("_attach", (function(_this) {
+        return function(data) {
+          if (data.event === "loaded" && !_this.loading) {
+            return data.callback();
+          }
+        };
+      })(this));
     }
 
     Tab.prototype.deferLoading = function() {
