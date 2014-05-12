@@ -41,10 +41,27 @@
         <a href="" ng-click="tab.focus()">{{tab.options.title}}</a>
         <span ng-show="tab.loading">...</span>
         <a href="" ng-click="tab.close()">&times;</a>
+        <a href="" ng-click="tab.move(tabs2, 999)">&gt;</a>
+        <a href="" ng-click="tab.move(tabs, $index-1)">&uarr;</a>
+        <a href="" ng-click="tab.move(tabs, $index+1)">&darr;</a>
       </li>
     </ul>
 
     <div class="tabs-content" tab-content="tabs">
+
+    </div>
+
+    <ul class='tabs-list'>
+      <li ng-repeat='tab in tabs2.list()' ng-class="{active: tab.focused}">
+        <a href="" ng-click="tab.focus()">{{tab.options.title}}</a>
+        <span ng-show="tab.loading">...</span>
+        <a href="" ng-click="tab.close()">&times;</a>
+        <a href="" ng-click="tab.move(tabs, 999)">&lt;</a>
+        <a href="" ng-click="tab.move(tabs2, $index-1)">&uarr;</a>
+        <a href="" ng-click="tab.move(tabs2, $index+1)">&darr;</a>
+      </li>
+    </ul>
+    <div class="tabs-content2" tab-content="tabs2">
 
     </div>
 

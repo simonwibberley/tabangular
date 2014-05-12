@@ -22,6 +22,9 @@ removeFromArray = (arr, item) ->
   else
     false
 
+lastItem = (arr) ->
+  arr[arr.length-1]
+
 #################
 # Events system #
 #################
@@ -200,7 +203,12 @@ class TabsService
       throw new Error "no template supplied"
 
   newArea: (options) ->
-    new TabArea @, options
+    area = new TabArea @, options
+
+    window.addEventListener "onbeforeunload", ->
+      area._persist()
+
+    area
 
 
 class Tab extends Evented
@@ -251,10 +259,7 @@ class Tab extends Evented
         @trigger "closed"
 
         if @focused
-          if (len = @area._focusStack.length) isnt 0
-            @area._focusStack[len-1].focus()
-          else if @area._tabs.length isnt 0
-            @area._tabs[0].focus()
+          (lastItem(@area._focusStack) or lastItem(@area._tabs))?.focus()
 
           @focused = false
     @
@@ -293,15 +298,20 @@ class Tab extends Evented
 
     if toArea isnt @area
       removeFromArray @area._focusStack, @
-      toArea._contentPane.appendChild @_elem
+      @area._persist()
+      toArea._contentPane.append @_elem
+      if @focused
+        (lastItem(@area._focusStack) or lastItem(@area._tabs))?.focus()
       @area = toArea
 
     idx = Math.min Math.max(0, idx), @area._tabs.length
 
     @area._tabs.splice idx, 0, @
-    if @focused 
+    if @focused or @area._tabs.length is 1
       @focused = false
       @focus()
+
+    @area._persist()
 
 
 DEFAULT_TAB_AREA_OPTIONS =

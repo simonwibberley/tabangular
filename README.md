@@ -4,11 +4,13 @@ Dynamic persistent tabbed content for angular.js
 
 ## Data model
 
-Tabs are 'typed'. A tab type specifies the template and (optionally) controller used to compile the DOM element which represents the tab's content. Each tab has a unique content element which is shown while the tab is in 'focus'.
+Tabs are 'typed'. A tab type specifies the template and (optionally) controller used to compile the DOM element which represents the tab's content. Each tab has a unique content element which is shown while the tab is in 'focus'. By default, tabs are given new scopes which inherit from their parent scope.
 
-Tabs are grouped into 'areas'. A tab area represents a flat array of tabs, of which only one can be focused at a time. Tabs can be parameterised by providing an 'options' object when they are created.
+Tabs are arranged by 'areas'. A tab area represents a flat array of tabs, of which only one can be focused at a time. Tabs can be parameterised by providing an 'options' object when they are created.
 
-Both tabs and tab areas provide a simple events system for communication with 
+Tabs provide a simple events system for communicating with their instantiators.
+
+Tabs are optionally persisted on a per-area basis. This is done by serializing an array of the open tabs along with their `options` objects.
 
 ## Usage
 

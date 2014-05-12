@@ -5,7 +5,7 @@
  */
 
 (function() {
-  var DEFAULT_TAB_AREA_OPTIONS, Evented, Tab, TabArea, TabsProvider, TabsService, attach, removeFromArray, tabTypeDefaults, tabangular,
+  var DEFAULT_TAB_AREA_OPTIONS, Evented, Tab, TabArea, TabsProvider, TabsService, attach, lastItem, removeFromArray, tabTypeDefaults, tabangular,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
@@ -27,6 +27,10 @@
     } else {
       return false;
     }
+  };
+
+  lastItem = function(arr) {
+    return arr[arr.length - 1];
   };
 
   attach = function(ctx, handlersObj, event, callback) {
@@ -258,7 +262,12 @@
     };
 
     TabsService.prototype.newArea = function(options) {
-      return new TabArea(this, options);
+      var area;
+      area = new TabArea(this, options);
+      window.addEventListener("onbeforeunload", function() {
+        return area._persist();
+      });
+      return area;
     };
 
     return TabsService;
@@ -302,7 +311,7 @@
     };
 
     Tab.prototype.close = function(silent) {
-      var len;
+      var _ref;
       if (this.closed) {
         throw new Error("Tab already closed");
       } else if (!silent) {
@@ -320,10 +329,8 @@
           this._elem = this._scope = null;
           this.trigger("closed");
           if (this.focused) {
-            if ((len = this.area._focusStack.length) !== 0) {
-              this.area._focusStack[len - 1].focus();
-            } else if (this.area._tabs.length !== 0) {
-              this.area._tabs[0].focus();
+            if ((_ref = lastItem(this.area._focusStack) || lastItem(this.area._tabs)) != null) {
+              _ref.focus();
             }
             this.focused = false;
           }
@@ -376,18 +383,26 @@
     };
 
     Tab.prototype.move = function(toArea, idx) {
+      var _ref;
       removeFromArray(this.area._tabs, this);
       if (toArea !== this.area) {
         removeFromArray(this.area._focusStack, this);
-        toArea._contentPane.appendChild(this._elem);
+        this.area._persist();
+        toArea._contentPane.append(this._elem);
+        if (this.focused) {
+          if ((_ref = lastItem(this.area._focusStack) || lastItem(this.area._tabs)) != null) {
+            _ref.focus();
+          }
+        }
         this.area = toArea;
       }
       idx = Math.min(Math.max(0, idx), this.area._tabs.length);
       this.area._tabs.splice(idx, 0, this);
-      if (this.focused) {
+      if (this.focused || this.area._tabs.length === 1) {
         this.focused = false;
-        return this.focus();
+        this.focus();
       }
+      return this.area._persist();
     };
 
     return Tab;
