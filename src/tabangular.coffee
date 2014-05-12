@@ -72,9 +72,9 @@ class TabsProvider
     @_tabTypeFetcher = null
 
     @$get = [
-      "$http", "$compile", "$controller", "$templateCache", "$q"
+      "$http", "$compile", "$controller", "$templateCache", "$q", "$injector"
       ($http, $compile, $controller, $templateCache, $q) =>
-        new TabsService @, $http, $compile, $controller, $templateCache, $q
+        new TabsService @, $http, $compile, $controller, $templateCache, $q, $injector
     ]
 
   ###*
@@ -117,7 +117,8 @@ class TabsProvider
 
   
 class TabsService
-  constructor: (@provider, @$http, @$compile, @$controller, @$templateCache, @$q) ->
+  constructor: (@provider, @$http, @$compile, @$controller, @$templateCache,
+                @$q, @$injector) ->
 
   _getTabType: (id) ->
     
@@ -125,7 +126,8 @@ class TabsService
       promise = @$q.when(@provider._tabTypes[id])
     else if @provider._tabTypeFetcher?
       deferred = @$q.defer()
-      @provider._tabTypeFetcher deferred, id
+      injectables = {deferred: deferred, typeID: id}
+      @$injector.inject @provider._tabTypeFetcher, null, injectables
       @provider._tabTypes[id] = deferred.promise
       promise = deferred.promise
     else 

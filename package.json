@@ -8,17 +8,11 @@
     "email": "djsheldrick@gmail.com",
     "url": "http://github.com/ds300"
   },
-  "main": "ISeq.js",
   "license": "Apache 2.0",
   "keywords": [
-    "lazy",
-    "sequence",
-    "functional",
-    "util"
+    "angular",
+    "tabs"
   ],
-  "scripts": {
-    "test": "test/test.coffee"
-  },
   "dependencies": {
     "coffee-script": "~1.7.1"
   },

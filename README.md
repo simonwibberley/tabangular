@@ -41,6 +41,35 @@ textEditor.config(function (TabsProvider) {
 });
 ```
 
+Additionally, or alternatively, you can automatically resolve named tab types by providing a 'fetcher' function.
+
+```javascript
+textEditor.config(function (TabsProvider) {
+
+  TabsProvider.setTabTypeFetcher(function($http, deferred, typeID) {
+    // the fetcher is injected with two parameters:
+    //   deferred: a $q Deferred object which must be resolved with the tab type
+    //   typeID: the string ID of the tab type to resolve
+
+    var templateURL = "tabs/" + typeID + "/template.html";
+
+    // in this example, we load the controller from the server.
+    var controllerURL = "tabs/" + typeID + "/controller.js";
+
+    $http.get(controllerURL).success(function (result) {
+      var ctrl = eval("(" + result.data + ")");
+
+      // now the tab type can be resolved
+      deferred.resolve({
+        templateURL: templateURL,
+        controller: ctrl
+      });
+    });
+  });
+
+});
+```
+
 Create a tab area with the `Tabs` service
 
 ```javascript

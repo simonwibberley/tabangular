@@ -88,8 +88,7 @@
   })();
 
   tabTypeDefaults = {
-    scope: true,
-    autoClose: true
+    scope: true
   };
 
   TabsProvider = (function() {
@@ -98,9 +97,9 @@
       this._templateLoadCallbacks = {};
       this._tabTypeFetcher = null;
       this.$get = [
-        "$http", "$compile", "$controller", "$templateCache", "$q", (function(_this) {
+        "$http", "$compile", "$controller", "$templateCache", "$q", "$injector", (function(_this) {
           return function($http, $compile, $controller, $templateCache, $q) {
-            return new TabsService(_this, $http, $compile, $controller, $templateCache, $q);
+            return new TabsService(_this, $http, $compile, $controller, $templateCache, $q, $injector);
           };
         })(this)
       ];
@@ -115,12 +114,6 @@
      *     scope: boolean
      *        specifies whether or not to define a new scope for
      *        tabs of this type. defaults to true
-     *     autoClose: boolean
-     *        specifies whether or not tab.close() should
-     *        automatically close the tab. Otherwise it simply
-     *        triggers a 'close' event. tab.close(true) can be used
-     *        to force a close.
-     *        defaults to true.
      *     templateURL: string
      *        specifies a url from which to load a template
      *     templateString: string
@@ -158,22 +151,27 @@
   })();
 
   TabsService = (function() {
-    function TabsService(provider, $http, $compile, $controller, $templateCache, $q) {
+    function TabsService(provider, $http, $compile, $controller, $templateCache, $q, $injector) {
       this.provider = provider;
       this.$http = $http;
       this.$compile = $compile;
       this.$controller = $controller;
       this.$templateCache = $templateCache;
       this.$q = $q;
+      this.$injector = $injector;
     }
 
     TabsService.prototype._getTabType = function(id) {
-      var deferred, promise;
+      var deferred, injectables, promise;
       if (this.provider._tabTypes[id] != null) {
         promise = this.$q.when(this.provider._tabTypes[id]);
       } else if (this.provider._tabTypeFetcher != null) {
         deferred = this.$q.defer();
-        this.provider._tabTypeFetcher(deferred, id);
+        injectables = {
+          deferred: deferred,
+          typeID: id
+        };
+        this.$injector.inject(this.provider._tabTypeFetcher, null, injectables);
         this.provider._tabTypes[id] = deferred.promise;
         promise = deferred.promise;
       } else {
@@ -209,11 +207,6 @@
 
     TabsService.prototype.__compileContent = function(tab, parentScope, cb, type) {
       var cached, doCompile, url, waiting;
-      if (type.autoClose) {
-        tab.on("close", function() {
-          return tab.close(true);
-        });
-      }
       tab._scope = type.scope ? parentScope.$new() : parentScope;
       doCompile = (function(_this) {
         return function(templateString) {
@@ -281,6 +274,7 @@
       this.focused = false;
       this._elem = null;
       this._scope = null;
+      this.enableAutoClose();
     }
 
     Tab.prototype.deferLoading = function() {
@@ -324,6 +318,23 @@
         }
       }
       return this;
+    };
+
+    Tab.prototype.enableAutoClose = function() {
+      if (this._offAutoClose == null) {
+        return this._offAutoClose = this.on("close", (function(_this) {
+          return function() {
+            return _this.close(true);
+          };
+        })(this));
+      }
+    };
+
+    Tab.prototype.disableAutoClose = function() {
+      if (typeof this._offAutoClose === "function") {
+        this._offAutoClose();
+      }
+      return delete this._offAutoClose;
     };
 
     Tab.prototype.focus = function() {
