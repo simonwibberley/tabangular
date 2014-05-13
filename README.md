@@ -75,9 +75,8 @@ textEditor.config(function (TabsProvider) {
 
   TabsProvider.typeFetcherFactory(function($http) {
     return function (deferred, typeID) {
-      // the fetcher is injected with two parameters:
-      //   deferred: a $q Deferred object which must be resolved with the tab type
-      //   typeID: the string ID of the tab type to resolve
+      // deferred is a $q Deferred object which must be resolved with the tab type
+      // typeID is the string ID of the tab type to resolve
 
       var templateURL = "tabs/" + typeID + "/template.html";
 
