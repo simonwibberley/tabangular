@@ -158,11 +158,22 @@ class TabsService
   _compileContent: (tab, parentScope, cb) ->
 
     if typeof (tab.type) is 'string'
-      @_getTabType(tab.type).then((type) => 
-        if !type?
-          throw new Error "Unrecognised tab type: " + tab.type
-        else
-          @__compileContent tab, parentScope, cb, type)
+      @_getTabType(tab.type).then(
+        (type) => 
+          if !type?
+            throw new Error "Unrecognised tab type: " + tab.type
+          else
+            @__compileContent tab, parentScope, cb, type
+        ,
+        (reason) ->
+          console.warn "Tab type not found: " + tab.type
+          console.warn "Reason: " + reason
+          type = {
+            templateString: "Tab type '#{tab.type}' not found because #{reason}"
+            scope: false
+          }
+          @__compileContent tab, parentScope, cb, type
+        )
     else
       @__compileContent tab, parentScope, cb, tab.type
 
@@ -180,7 +191,7 @@ class TabsService
 
     # find the template
     if type.templateID?
-      doCompile document.getElementById(type.templateID).innerHTML
+      doCompile @$templateCache.get type.templateID
     else if type.templateString?
       doCompile type.templateString
     else if (url = type.templateURL)?

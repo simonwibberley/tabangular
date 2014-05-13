@@ -12,7 +12,7 @@ module.exports = (grunt) ->
         sourceMapIn : 'tabangular.js.map'
         sourceMap : true
     watch:
-      files: ["src/tabangular.coffee"]
+      files: ["tabangular.coffee"]
       tasks: ["coffee","uglify"]
 
   grunt.loadNpmTasks 'grunt-contrib-coffee'

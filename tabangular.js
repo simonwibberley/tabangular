@@ -215,7 +215,16 @@
               return _this.__compileContent(tab, parentScope, cb, type);
             }
           };
-        })(this));
+        })(this), function(reason) {
+          var type;
+          console.warn("Tab type not found: " + tab.type);
+          console.warn("Reason: " + reason);
+          type = {
+            templateString: "Tab type '" + tab.type + "' not found because " + reason,
+            scope: false
+          };
+          return this.__compileContent(tab, parentScope, cb, type);
+        });
       } else {
         return this.__compileContent(tab, parentScope, cb, tab.type);
       }
@@ -232,7 +241,7 @@
         };
       })(this);
       if (type.templateID != null) {
-        return doCompile(document.getElementById(type.templateID).innerHTML);
+        return doCompile(this.$templateCache.get(type.templateID));
       } else if (type.templateString != null) {
         return doCompile(type.templateString);
       } else if ((url = type.templateURL) != null) {

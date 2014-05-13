@@ -1,24 +1,38 @@
 # Tabangular.js
 
-Dynamic persistent tabbed content for angular.js
+Dynamic persistent tabbed content for [Angular.JS](http://angularjs.org)
 
-## Tabs...
+## Data Model
 
-- are 'typed'. A tab type specifies the template and (optionally) controller used to compile the DOM element which represents the tab's content.
+Tabs...
 
-- each have a unique content element which is shown while the tab is in 'focus'. By default, tabs are given new scopes which inherit from their parent scope.
+- each have a unique content element which is shown only while the tab is in 'focus'.
+
+- are 'typed'. A tab type specifies the template and (optionally) controller used to compile the tab's content element. By default, tabs get new scopes inheriting from their parent scope.
 
 - are arranged by 'areas'. A tab area represents a flat array of tabs, of which only one can be focused at a time.
 
-- can be moved to different areas, or to a different location in the same area.
+- can be moved to different areas, or to a different index within the same area.
 
 - can be parameterised by providing an `options` object when they are created.
 
 - provide a simple events system for communicating with their instantiators.
 
-- are optionally persisted on a per-area basis. This is done by serializing an array of the open tabs along with their `options` objects.
+- are optionally persisted on a per-area basis.
+
+## Building
+
+You'll need to run `npm install` and then `sudo npm install grunt-cli -g` if you don't have grunt installed already.
+
+Then it's just `grunt`, or `grunt && grunt watch` if developing.
 
 ## Usage
+
+Load `tabangular.js` or `tabangular.min.js` into your page
+
+```html
+<script type="text/javascript" src="path/to/tabangular.js"></script>
+```
 
 Include `'tabangular'` in your module dependencies
 
@@ -59,25 +73,27 @@ Additionally, or alternatively, you can automatically resolve named tab types by
 ```javascript
 textEditor.config(function (TabsProvider) {
 
-  TabsProvider.setTabTypeFetcher(function($http, deferred, typeID) {
-    // the fetcher is injected with two parameters:
-    //   deferred: a $q Deferred object which must be resolved with the tab type
-    //   typeID: the string ID of the tab type to resolve
+  TabsProvider.typeFetcherFactory(function($http) {
+    return function (deferred, typeID) {
+      // the fetcher is injected with two parameters:
+      //   deferred: a $q Deferred object which must be resolved with the tab type
+      //   typeID: the string ID of the tab type to resolve
 
-    var templateURL = "tabs/" + typeID + "/template.html";
+      var templateURL = "tabs/" + typeID + "/template.html";
 
-    // in this example, we load the controller from the server.
-    var controllerURL = "tabs/" + typeID + "/controller.js";
+      // in this example, we load the controller from the server.
+      var controllerURL = "tabs/" + typeID + "/controller.js";
 
-    $http.get(controllerURL).success(function (result) {
-      var ctrl = eval("(" + result.data + ")");
+      $http.get(controllerURL).success(function (result) {
+        var ctrl = eval("(" + result.data + ")");
 
-      // now the tab type can be resolved
-      deferred.resolve({
-        templateURL: templateURL,
-        controller: ctrl
+        // now the tab type can be resolved
+        deferred.resolve({
+          templateURL: templateURL,
+          controller: ctrl
+        });
       });
-    });
+    };
   });
 
 });
@@ -171,13 +187,30 @@ They can also intercept the `'close'` event, which gets fired when `Tab.close()`
 }
 ```
 
-Tab templates should not use ng-controller
-
+When providing a controller in the tab type, content templates should not use `ng-controller`, since the controller needs to be injected with the `Tab` pseudo-service by tabangular.
 
 ```html
 <!-- templates/editor.html -->
 <textarea ng-model='text'></textarea>
 <button ng-click='save()'>Save</button>
+```
+
+However, if the tab doesn't need to know the fact that it's in a tab, `ng-controller` is fine.
+
+```html
+<!-- assume config tab type is simply {templateID: 'config.html'} -->
+
+<script type='text/javascript'>
+  function ConfigCtrl ($scope) {
+    ... configuration logic
+  }
+</script>
+
+<script type='text/ng-template' id='config.html'>
+  <div ng-controller='ConfigCtrl'>
+    ... configuration controls
+  </div>
+</script>
 ```
 
 Persistence may be achieved by passing options to `Tabs.newArea`. There is a default `localStorage` persistence option which can be enabled by giving a string id to the tab area
@@ -186,17 +219,77 @@ Persistence may be achieved by passing options to `Tabs.newArea`. There is a def
 $scope.docs = Tabs.newArea({id: "myEditor"});
 ```
 
-Alternatively, provide `persist` and `getExisting` functions to 
+Alternatively, provide `persist` and `getExisting` functions to e.g. save state to a server.
+
+```javascript
+$scope.docs = Tabs.newArea({
+  // persist is called whenever tabs are opened, closed, moved, and focused,
+  // so if bandwidth is an issue for you, it is probably best to wrap the
+  // post/put request somehow.
+  persist: function (state) {
+    // the state parameter is a string.
+    $http.post('/tabs-state', {state: state});
+  },
+  // getExisting is called only once
+  getExisting: function (cb) {
+    $http.get('/tabs-state').success(function (result) {
+      cb(result.data.state);
+    });
+  }
+});
+```
+
+
 
 ## API
 
-Forthcoming
+### `TabsProvider` :: provider
 
-## Building
+`TabsProvider` can be used to configure the `Tabs` service.
 
-You'll need to run `npm install` and then `sudo npm install grunt-cli -g` if you don't have grunt installed already.
+#### Methods
 
-Then it's just `grunt`, or `grunt && grunt watch` if developing.
+<a id="registerTabType"></a>
+##### `registerTabType(id : string, options : object) : void`
+
+Registers a tab type. `id` should be a unique string id, `options` should be an object with some combination of the following:
+
+|Key|Type|Description|
+|---|----|-----------|  
+|`scope`|boolean| specifies whether or not to define a new scope for tabs of this type. defaults to `true`|
+|`templateURL`|string| specifies a url from which to load a template|
+|`templateString`|string| specifies the template to use in the tab. takes precedence over templateURL|
+|`templateID`|string| specifies the DOM element ID of the template to use. takes precedence over templateURL and templateString|
+|`controller`|(optional) function or string| specifies the controller to call against the scope. Should be a function or a string denoting the controller to use (see [$controller](https://docs.angularjs.org/api/ng/service/$controller)).|
+
+Example:
+
+```javascript
+module.config(function (TabsProvider) {
+  TabsProvider.registerTabType("myTabType", {
+    templateURL: "templates/my-tab-type.html",
+    controller: "MyTabCtrl"
+  })
+});
+```
+
+##### `typeFetcherFactory(factory : function) : void`
+
+Registers a factory function for a tab type fetcher. The tab type fetcher resolves named tab types dynamically, if they haven't been previously registered. The factory function is invoked using Angular's dependency injector, to allow the use of services such at `$http` when resolving tab types. It should return the fetcher function which has the signature `(deferred : Deferred, typeID : string) : void`. The fetcher function is responsible for resolving the deferred object with the relevant tab type (see [`registerTabType`](#registerTabType)), or rejecting it when no such type can be found. See [$q](https://docs.angularjs.org/api/ng/service/$q) for the `Deferred` api.
+
+Example which finds the template :
+
+```javascript
+module.config(function (TabsProvider) {
+  TabsProvider.typeFetcherFactory(function ($templateCache) {
+    return function (dfd, id) {
+      var template = $templateCache.get(id + ".html");
+      if ()
+    };
+
+  });
+});
+```
 
 ## License
 
