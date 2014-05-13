@@ -1,6 +1,8 @@
 # Tabangular.js
 
-Dynamic persistent tabbed content for [Angular.JS](http://angularjs.org)
+Dynamic persistent tabbed content for [Angular.JS](http://angularjs.org).
+
+Useful for single-page interactive web apps which allow the user to organise content by tabs, e.g. a text editor.
 
 ## Data Model
 
@@ -118,10 +120,15 @@ Then define functions and stuff for manipulating docs.
 
   $scope.configTab = null;
   $scope.config = function () {
-    if ($scope.configTab) // only want one of these to be open at a time
+    if ($scope.configTab) {
+      // we only want one config tab open at a time
       $scope.configTab.focus();
-    else
+    } else {
       $scope.configTab = $scope.docs.open('configTab'); // options are optional
+      $scope.configTab.on("closed", function () {
+        delete $scope.configTab;
+      });
+    }
   }
 });
 ```
