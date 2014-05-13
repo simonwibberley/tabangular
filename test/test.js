@@ -6,15 +6,17 @@ test.config(function (TabsProvider) {
     controller: 'InputCtrl'
   });
 
-  TabsProvider.setTabTypeFetcher(function ($window, deferred, typeID) {
-    if (typeID === 'fetched') {
-      $window.setTimeout(function () {
-        deferred.resolve({
-          templateString: '<h4>This junk was resolved: {{options.title}}</h4>',
-          scope: false
-        });
-      })
-    }
+  TabsProvider.typeFetcherFactory(function ($window) {
+    return function (deferred, typeID) {
+      if (typeID === 'fetched') {
+        $window.setTimeout(function () {
+          deferred.resolve({
+            templateString: '<h4>This junk was resolved: {{options.title}}</h4>',
+            scope: false
+          });
+        })
+      }
+    };
   });
 });
 

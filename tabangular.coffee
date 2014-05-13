@@ -114,7 +114,14 @@ class TabsProvider
       # TODO: validate that we have enough information to decide how to compile
       # tabs
 
-  setTabTypeFetcher: (@_tabTypeFetcher) ->
+  typeFetcherFactory: (@_typeFetcherFactory) ->
+
+  _reifyFetcher: ($injector) ->
+    if @_typeFetcherFactory?
+      @_tabTypeFetcher = $injector.invoke @_typeFetcherFactory
+      delete @_typeFetcherFactory
+      if typeof @_tabTypeFetcher isnt 'function'
+        throw new Error "Tab type fetcher must be a function"
 
 
 
@@ -124,13 +131,13 @@ class TabsService
                 @$q, @$injector) ->
 
   _getTabType: (id) ->
-    
+    @provider._reifyFetcher @$injector
+
     if @provider._tabTypes[id]?
       promise = @$q.when(@provider._tabTypes[id])
     else if @provider._tabTypeFetcher?
       deferred = @$q.defer()
-      injectables = {deferred: deferred, typeID: id}
-      @$injector.invoke @provider._tabTypeFetcher, null, injectables
+      @provider._tabTypeFetcher deferred, id
       @provider._tabTypes[id] = deferred.promise
       promise = deferred.promise
     else 
@@ -367,12 +374,10 @@ class TabArea extends Evented
 
   # saves the junk to the place
   _persist: ->
-    @options.persist? JSON.stringify(
-      @_tabs.filter((tab) -> not tab.loading).map (tab) =>
+    @options.persist? JSON.stringify @_tabs.map (tab) =>
         type: tab.type
         options: @options.transformOptions tab.options
         active: !!tab.focused
-    )
 
   # calls cb on existing tabs like {type, options, active}. if cb returns
   # true, automatically reloads tab by calling @load(type, options)

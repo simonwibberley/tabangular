@@ -149,8 +149,18 @@
       }
     };
 
-    TabsProvider.prototype.setTabTypeFetcher = function(_tabTypeFetcher) {
-      this._tabTypeFetcher = _tabTypeFetcher;
+    TabsProvider.prototype.typeFetcherFactory = function(_typeFetcherFactory) {
+      this._typeFetcherFactory = _typeFetcherFactory;
+    };
+
+    TabsProvider.prototype._reifyFetcher = function($injector) {
+      if (this._typeFetcherFactory != null) {
+        this._tabTypeFetcher = $injector.invoke(this._typeFetcherFactory);
+        delete this._typeFetcherFactory;
+        if (typeof this._tabTypeFetcher !== 'function') {
+          throw new Error("Tab type fetcher must be a function");
+        }
+      }
     };
 
     return TabsProvider;
@@ -169,16 +179,13 @@
     }
 
     TabsService.prototype._getTabType = function(id) {
-      var deferred, injectables, promise;
+      var deferred, promise;
+      this.provider._reifyFetcher(this.$injector);
       if (this.provider._tabTypes[id] != null) {
         promise = this.$q.when(this.provider._tabTypes[id]);
       } else if (this.provider._tabTypeFetcher != null) {
         deferred = this.$q.defer();
-        injectables = {
-          deferred: deferred,
-          typeID: id
-        };
-        this.$injector.invoke(this.provider._tabTypeFetcher, null, injectables);
+        this.provider._tabTypeFetcher(deferred, id);
         this.provider._tabTypes[id] = deferred.promise;
         promise = deferred.promise;
       } else {
@@ -477,9 +484,7 @@
 
     TabArea.prototype._persist = function() {
       var _base;
-      return typeof (_base = this.options).persist === "function" ? _base.persist(JSON.stringify(this._tabs.filter(function(tab) {
-        return !tab.loading;
-      }).map((function(_this) {
+      return typeof (_base = this.options).persist === "function" ? _base.persist(JSON.stringify(this._tabs.map((function(_this) {
         return function(tab) {
           return {
             type: tab.type,
