@@ -256,7 +256,7 @@ $scope.docs = Tabs.newArea({
 
 #### Methods
 
-<a id="registerTabType"></a>
+<a name="registerTabType"></a>
 
 ##### `registerTabType` :: `(id : string, options : object) : void`
 
@@ -295,7 +295,7 @@ module.config(function (TabsProvider) {
 ```
 
 
-<a id="typeFetcherFactory"></a>
+<a name="typeFetcherFactory"></a>
 <hr />
 ##### `typeFetcherFactory` :: `(factory : function) : void`
 
@@ -328,7 +328,7 @@ The 'tabs' service allows the creation of new tab areas.
 
 #### Methods
 
-<a id="newArea"></a>
+<a name="newArea"></a>
 #### `newArea` :: `(options : object) : TabArea`
 
 Creates a new tab area. `options` should be an object with some combination of the following:
@@ -359,7 +359,7 @@ Creates a new tab area. `options` should be an object with some combination of t
 The `TabArea` class represents an ordered grouping of tabs and provides methods for creating new tabs. A tab area may have only one tab focused at one point in time. TabArea instances are created using the [`Tabs.newArea`](#newArea) method.
 
 #### Methods
-<a id="load"></a>
+<a name="load"></a>
 #### `load` :: `(type : string | object [, options : object]) : Tab`
 
 Loads and returns a new tab. `type` should be a named tab type or an anonymous tab type object (see [registerTabType](#registerTabType) for details).
@@ -367,19 +367,19 @@ Loads and returns a new tab. `type` should be a named tab type or an anonymous t
 `options` can be anything and is attached to the returned Tab object such that `load(foo, bar).options === bar`.
 
 <hr />
-<a id="open"></a>
+<a name="open"></a>
 #### `open` :: `(type : string | object [, options : object]) : Tab`
 
 Convenience method. As [`TabArea.load`](#load) but calls [`Tab.focus`](#focus) before returning the tab.
 
 <hr />
-<a id="list"></a>
+<a name="list"></a>
 #### `list` :: `() : [Tab]`
 
 Returns an array of the tabs currently in this area. For performance reasons, it currently returns the internally-used array which should not be modified.
 
 <hr />
-<a id="handleExisting"></a>
+<a name="handleExisting"></a>
 #### `handleExisting` :: `([cb : function (tab : object) : bool]) : void`
 
 Triggers the reloading of tabs from persistent storage.
