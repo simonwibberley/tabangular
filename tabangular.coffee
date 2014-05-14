@@ -91,14 +91,12 @@ class TabsProvider
   #     scope: boolean
   #        specifies whether or not to define a new scope for
   #        tabs of this type. defaults to true
-  #     templateURL: string
-  #        specifies a url from which to load a template
-  #     templateString: string
+  #     templateUrl: string
+  #        specifies a url from which to load a template (or the id of a
+  #        template already in the dom)
+  #     template: string
   #        specifies the template to use in the tab. takes
-  #        precedence over templateURL
-  #     templateID: string
-  #        specifies the DOM element ID of the template to use.
-  #        takes precedence over templateURL and templateString
+  #        precedence over templateUrl
   #     controller: function or string
   #        specifies the controller to call against the scope.
   #        Should be a function or a string denoting the
@@ -190,11 +188,10 @@ class TabsService
       cb()
 
     # find the template
-    if type.templateID?
-      doCompile @$templateCache.get type.templateID
-    else if type.templateString?
-      doCompile type.templateString
-    else if (url = type.templateURL)?
+    if type.template?
+      doCompile type.template
+
+    else if (url = type.templateUrl)?
       # look in template cache first
       if (cached = @$templateCache.get url)?
         doCompile cached
@@ -224,7 +221,7 @@ class TabsService
   newArea: (options) ->
     area = new TabArea @, options
 
-    window.addEventListener "onbeforeunload", ->
+    window.addEventListener "beforeunload", ->
       area._persist()
 
     area
@@ -362,6 +359,7 @@ class TabArea extends Evented
 
     # initiate loading of existing tabs
     @options.getExisting? (json) =>
+      json = json?.trim() or "[]" # allow empty string
       @_existingReady = true
       @_existingTabs = JSON.parse(json).map (tab) =>
         tab.options = @options.parseOptions tab.options

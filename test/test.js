@@ -2,7 +2,7 @@ var test = angular.module('test', ['tabangular']);
 
 test.config(function (TabsProvider) {
   TabsProvider.registerTabType("input", {
-    templateURL: 'templates/input.html',
+    templateUrl: 'templates/input.html',
     controller: 'InputCtrl'
   });
 
@@ -11,7 +11,7 @@ test.config(function (TabsProvider) {
       if (typeID === 'fetched') {
         $window.setTimeout(function () {
           deferred.resolve({
-            templateString: '<h4>This junk was resolved: {{options.title}}</h4>',
+            template: '<h4>This junk was resolved: {{options.title}}</h4>',
             scope: false
           });
         })
@@ -80,7 +80,7 @@ function NestedCtrl ($scope, Tabs, Tab) {
 
     $scope.tabs.open({
       controller: ctrl,
-      templateString: template 
+      template: template 
     }, {title: name});
     
   };
@@ -88,7 +88,7 @@ function NestedCtrl ($scope, Tabs, Tab) {
   $scope.openNested = function (title) {
     $scope.tabs.open({
       controller: 'NestedCtrl',
-      templateID: 'main.html'
+      templateUrl: 'main.html'
     }, {title: title});
   }
 }

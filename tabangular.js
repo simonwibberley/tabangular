@@ -125,14 +125,12 @@
      *     scope: boolean
      *        specifies whether or not to define a new scope for
      *        tabs of this type. defaults to true
-     *     templateURL: string
-     *        specifies a url from which to load a template
-     *     templateString: string
+     *     templateUrl: string
+     *        specifies a url from which to load a template (or the id of a
+     *        template already in the dom)
+     *     template: string
      *        specifies the template to use in the tab. takes
-     *        precedence over templateURL
-     *     templateID: string
-     *        specifies the DOM element ID of the template to use.
-     *        takes precedence over templateURL and templateString
+     *        precedence over templateUrl
      *     controller: function or string
      *        specifies the controller to call against the scope.
      *        Should be a function or a string denoting the
@@ -240,11 +238,9 @@
           return cb();
         };
       })(this);
-      if (type.templateID != null) {
-        return doCompile(this.$templateCache.get(type.templateID));
-      } else if (type.templateString != null) {
-        return doCompile(type.templateString);
-      } else if ((url = type.templateURL) != null) {
+      if (type.template != null) {
+        return doCompile(type.template);
+      } else if ((url = type.templateUrl) != null) {
         if ((cached = this.$templateCache.get(url)) != null) {
           return doCompile(cached);
         } else {
@@ -281,7 +277,7 @@
     TabsService.prototype.newArea = function(options) {
       var area;
       area = new TabArea(this, options);
-      window.addEventListener("onbeforeunload", function() {
+      window.addEventListener("beforeunload", function() {
         return area._persist();
       });
       return area;
@@ -463,6 +459,7 @@
         _base.getExisting((function(_this) {
           return function(json) {
             var cb, _i, _len, _ref;
+            json = (json != null ? json.trim() : void 0) || "[]";
             _this._existingReady = true;
             _this._existingTabs = JSON.parse(json).map(function(tab) {
               tab.options = _this.options.parseOptions(tab.options);
