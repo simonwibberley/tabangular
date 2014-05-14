@@ -49,20 +49,21 @@ textEditor.config(function (TabsProvider) {
 
   TabsProvider.registerTabType("editorTab", {
     // you can supply a url from which to fetch the template
-    templateURL: 'templates/editor.html',
+    templateUrl: 'templates/editor.html',
     // controllers are resolved as usual
     controller: 'EditorCtrl'
   });
 
   TabsProvider.registerTabType("configTab", {
-    // you can supply the ID of a DOM node to use as a template
-    templateID: 'config-template',
+    // templateUrl looks in the $templateCache so you can supply the id of a
+    // text/ng-template script element
+    templateUrl: 'config-template',
     controller: function ($scope, Tab) { ... }
   });
 
   TabsProvider.registerTabType("hello", {
     // or just a string
-    templateString: '<div>Hello world!</div>',
+    template: '<div>Hello world!</div>',
     // set scope to false to avoid creating a new scope for the tab
     scope: false
     // don't supply a controller if the tab doesn't need a controller
@@ -249,7 +250,7 @@ $scope.docs = Tabs.newArea({
 
 ## API
 
-### `TabsProvider` :: provider
+### `TabsProvider` : provider
 
 `TabsProvider` can be used to configure the `Tabs` service.
 
@@ -260,42 +261,92 @@ $scope.docs = Tabs.newArea({
 
 Registers a tab type. `id` should be a unique string id, `options` should be an object with some combination of the following:
 
-|Key|Type|Description|
-|---|----|-----------|  
-|`scope`|boolean| specifies whether or not to define a new scope for tabs of this type. defaults to `true`|
-|`templateURL`|string| specifies a url from which to load a template|
-|`templateString`|string| specifies the template to use in the tab. takes precedence over templateURL|
-|`templateID`|string| specifies the DOM element ID of the template to use. takes precedence over templateURL and templateString|
-|`controller`|(optional) function or string| specifies the controller to call against the scope. Should be a function or a string denoting the controller to use (see [$controller](https://docs.angularjs.org/api/ng/service/$controller)).|
+- `scope` :: `boolean`
+  
+  Specifies whether or not to define a new scope for tabs of this type. defaults to `true`
 
-Example:
+- `templateUrl` :: `string`
+
+  Specifies a url from which to load a template, or the id of a template already in the dom (e.g. 'foo.html' for the template `<script type='text/ng-template' id='foo.html'>...</script>'`)
+
+- `template` :: `string`
+
+  Specifies the template to use in the tab. Takes precedence over `templateUrl`
+
+- `controller` :: `function | string`
+  
+  Specifies the controller to call against the scope. Should be a function or a string denoting the controller to use (see [$controller](https://docs.angularjs.org/api/ng/service/$controller)).|
+
+Examples:
 
 ```javascript
 module.config(function (TabsProvider) {
   TabsProvider.registerTabType("myTabType", {
-    templateURL: "templates/my-tab-type.html",
+    templateUrl: "templates/my-tab-type.html",
     controller: "MyTabCtrl"
-  })
+  });
+
+  TabsProvider.registerTabType("myOtherTabType", {
+    template: "<span>Hello {{name}}!</span>",
+    controller: function ($scope, Tab) { $scope.name = Tab.options.name; }
+  });
 });
 ```
 
+<a id="typeFetcherFactory"></a>
 ##### `typeFetcherFactory(factory : function) : void`
 
-Registers a factory function for a tab type fetcher. The tab type fetcher resolves named tab types dynamically, if they haven't been previously registered. The factory function is invoked using Angular's dependency injector, to allow the use of services such at `$http` when resolving tab types. It should return the fetcher function which has the signature `(deferred : Deferred, typeID : string) : void`. The fetcher function is responsible for resolving the deferred object with the relevant tab type (see [`registerTabType`](#registerTabType)), or rejecting it when no such type can be found. See [$q](https://docs.angularjs.org/api/ng/service/$q) for the `Deferred` api.
+Registers a factory function for a tab type fetcher. The tab type fetcher resolves named tab types dynamically, if they haven't been previously registered. The factory function is invoked using Angular's dependency injector, to allow the use of services such at `$http` when resolving tab types. It should return the fetcher function which has the signature `(deferred : Deferred, typeID : string) : void`. The fetcher function is responsible for resolving the deferred object with the relevant tab type (see [`registerTabType`](#registerTabType) for the type options), or rejecting it when no such type can be found. See [$q](https://docs.angularjs.org/api/ng/service/$q) for the `Deferred` api.
 
-Example which finds the template :
+Example which finds a template in Angular's template cache:
 
 ```javascript
 module.config(function (TabsProvider) {
   TabsProvider.typeFetcherFactory(function ($templateCache) {
     return function (dfd, id) {
       var template = $templateCache.get(id + ".html");
-      if ()
+      if (template) {
+        dfd.resolve({
+          template: template
+          scope: false
+        });
+      } else {
+        dfd.reject("Couldn't find template: " + id + ".html");
+      }
     };
-
   });
 });
 ```
+
+### `Tabs` : service
+
+The 'tabs' service allows the creation of new tab areas.
+
+#### Methods
+
+##### `newArea(options : object) : TabArea`
+
+Creates a new tab area. `options` should be an object with some combination of the following:
+
+- `id` :: `string`
+
+  Activates the default localStorage persistence mechanism. Should be unique on a per-tab-area basis.
+
+- `persist` :: `function (state : string) : void`
+
+  Takes a string representation of the tab area's current state and puts it somewhere for safe keeping. Called when tabs are opened, closed, and focused. Also called upon the window's `beforeunload` event. By default it is a function which, if `id` has been defined, stores the state in `localStorage['tabangular:'+id]`
+
+- `getExisting` :: `function (cb : function (state : string) : void) : void`
+
+  Takes a callback which should be invoked with the stored state string at some point (or null if no state stored). Called once upon tab area construction. By default it is a function which, if `id` has been defined, looks up the state in `localStorage['tabangular:'+id]`
+
+- `transformOptions` :: `function (options : object) : object`
+
+  Takes the in-use version of a tab's options object and transforms it such that it is JSON stringifiable. By default it is the identity function.
+
+- `parseOptions` :: `function (options : object) : object`
+
+  The reverse of `transformOptions`. Takes the deserialised version of a tab's options object and transforms it such that it is identical to how it was before being serialised. By default it is the identity function.
 
 ## License
 
