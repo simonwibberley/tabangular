@@ -258,7 +258,7 @@ $scope.docs = Tabs.newArea({
 
 <a name="registerTabType"></a>
 
-##### `registerTabType` :: `(id : string, options : object) : void`
+#### `registerTabType` :: `(id : string, options : object) : void`
 
 Registers a tab type. `id` should be a unique string id, `options` should be an object with some combination of the following:
 
@@ -297,7 +297,7 @@ module.config(function (TabsProvider) {
 
 <a name="typeFetcherFactory"></a>
 <hr />
-##### `typeFetcherFactory` :: `(factory : function) : void`
+#### `typeFetcherFactory` :: `(factory : function) : void`
 
 Registers a factory function for a tab type fetcher. The tab type fetcher resolves named tab types dynamically, if they haven't been previously registered. The factory function is invoked using Angular's dependency injector, to allow the use of services such at `$http` when resolving tab types. It should return the fetcher function which has the signature `(deferred : Deferred, typeID : string) : void`. The fetcher function is responsible for resolving the deferred object with the relevant tab type (see [`registerTabType`](#registerTabType) for the type options), or rejecting it when no such type can be found. See [$q](https://docs.angularjs.org/api/ng/service/$q) for the `Deferred` api.
 
@@ -426,6 +426,31 @@ area.handleExisting(function (tab) {
   }
 })
 ```
+
+#### Events
+
+- `loaded`
+
+  Triggered when the tab area is connected to it's content element, i.e. the DOM node in which tab contents are placed.
+
+### Tab : class/pseudo-service
+
+`Tab` instances are created using the [`TabArea.load`](#load) or [`TabArea.open`](#open) methods.
+
+When a tab type has a controller specified, it may be injected with it's own Tab instance.
+
+e.g.
+
+```javascript
+function MyTabCtrl (Tab) {
+  Tab.on("update", function () {
+    $scope.title = Tab.options.title;
+  });
+  Tab.trigger("update");
+}
+```
+
+
 
 ## License
 
