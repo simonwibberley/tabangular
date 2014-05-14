@@ -259,27 +259,27 @@ $scope.docs = Tabs.newArea({
 <a id="registerTabType"></a>
 ##### `registerTabType(id : string, options : object) : void`
 
-> Registers a tab type. `id` should be a unique string id, `options` should be an object with some combination of the following:
+Registers a tab type. `id` should be a unique string id, `options` should be an object with some combination of the following:
 
-> - `scope` :: `boolean`
+- `scope` :: `boolean`
   
->   Specifies whether or not to define a new scope for tabs of this type. defaults to `true`
+  Specifies whether or not to define a new scope for tabs of this type. defaults to `true`
 
-> - `templateUrl` :: `string`
+- `templateUrl` :: `string`
 
->   Specifies a url from which to load a template, or the id of a template already in the dom (e.g. 'foo.html' for the template `<script type='text/ng-template' id='foo.html'>...</script>'`)
+  Specifies a url from which to load a template, or the id of a template already in the dom (e.g. 'foo.html' for the template `<script type='text/ng-template' id='foo.html'>...</script>'`)
 
-> - `template` :: `string`
+- `template` :: `string`
 
->   Specifies the template to use in the tab. Takes precedence over `templateUrl`
+  Specifies the template to use in the tab. Takes precedence over `templateUrl`
 
-> - `controller` :: `function | string`
+- `controller` :: `function | string`
   
->   Specifies the controller to call against the scope. Should be a function or a string denoting the controller to use (see [$controller](https://docs.angularjs.org/api/ng/service/$controller)).|
+  Specifies the controller to call against the scope. Should be a function or a string denoting the controller to use (see [$controller](https://docs.angularjs.org/api/ng/service/$controller)).|
 
-> Examples:
+Examples:
 
->```javascript
+```javascript
 module.config(function (TabsProvider) {
   TabsProvider.registerTabType("myTabType", {
     templateUrl: "templates/my-tab-type.html",
@@ -291,16 +291,16 @@ module.config(function (TabsProvider) {
     controller: function ($scope, Tab) { $scope.name = Tab.options.name; }
   });
 });
->```
+```
 
 <a id="typeFetcherFactory"></a>
 ##### `typeFetcherFactory(factory : function) : void`
 
-> Registers a factory function for a tab type fetcher. The tab type fetcher resolves named tab types dynamically, if they haven't been previously registered. The factory function is invoked using Angular's dependency injector, to allow the use of services such at `$http` when resolving tab types. It should return the fetcher function which has the signature `(deferred : Deferred, typeID : string) : void`. The fetcher function is responsible for resolving the deferred object with the relevant tab type (see [`registerTabType`](#registerTabType) for the type options), or rejecting it when no such type can be found. See [$q](https://docs.angularjs.org/api/ng/service/$q) for the `Deferred` api.
+Registers a factory function for a tab type fetcher. The tab type fetcher resolves named tab types dynamically, if they haven't been previously registered. The factory function is invoked using Angular's dependency injector, to allow the use of services such at `$http` when resolving tab types. It should return the fetcher function which has the signature `(deferred : Deferred, typeID : string) : void`. The fetcher function is responsible for resolving the deferred object with the relevant tab type (see [`registerTabType`](#registerTabType) for the type options), or rejecting it when no such type can be found. See [$q](https://docs.angularjs.org/api/ng/service/$q) for the `Deferred` api.
 
-> Example which finds a template in Angular's template cache:
+Example which finds a template in Angular's template cache:
 
->```javascript
+```javascript
 module.config(function (TabsProvider) {
   TabsProvider.typeFetcherFactory(function ($templateCache) {
     return function (dfd, id) {
@@ -316,7 +316,7 @@ module.config(function (TabsProvider) {
     };
   });
 });
->```
+```
 
 ### `Tabs` : service
 
@@ -326,27 +326,27 @@ The 'tabs' service allows the creation of new tab areas.
 
 ##### `newArea(options : object) : TabArea`
 
-> Creates a new tab area. `options` should be an object with some combination of the following:
+Creates a new tab area. `options` should be an object with some combination of the following:
 
-> - `id` :: `string`
+- `id` :: `string`
 
->   Activates the default localStorage persistence mechanism. Should be unique on a per-tab-area basis.
+  Activates the default localStorage persistence mechanism. Should be unique on a per-tab-area basis.
 
-> - `persist` :: `function (state : string) : void`
+- `persist` :: `function (state : string) : void`
 
->   Takes a string representation of the tab area's current state and puts it somewhere for safe keeping. Called when tabs are opened, closed, and focused. Also called upon the window's `beforeunload` event. By default it is a function which, if `id` has been defined, stores the state in `localStorage['tabangular:'+id]`
+  Takes a string representation of the tab area's current state and puts it somewhere for safe keeping. Called when tabs are opened, closed, and focused. Also called upon the window's `beforeunload` event. By default it is a function which, if `id` has been defined, stores the state in `localStorage['tabangular:'+id]`
 
-> - `getExisting` :: `function (cb : function (state : string) : void) : void`
+- `getExisting` :: `function (cb : function (state : string) : void) : void`
 
->   Takes a callback which should be invoked with the stored state string at some point (or null if no state stored). Called once upon tab area construction. By default it is a function which, if `id` has been defined, looks up the state in `localStorage['tabangular:'+id]`
+  Takes a callback which should be invoked with the stored state string at some point (or null if no state stored). Called once upon tab area construction. By default it is a function which, if `id` has been defined, looks up the state in `localStorage['tabangular:'+id]`
 
-> - `transformOptions` :: `function (options : object) : object`
+- `transformOptions` :: `function (options : object) : object`
 
->   Takes the in-use version of a tab's options object and transforms it such that it is JSON stringifiable. By default it is the identity function.
+  Takes the in-use version of a tab's options object and transforms it such that it is JSON stringifiable. By default it is the identity function.
 
-> - `parseOptions` :: `function (options : object) : object`
+- `parseOptions` :: `function (options : object) : object`
 
->   The reverse of `transformOptions`. Takes the deserialised version of a tab's options object and transforms it such that it is identical to how it was before being serialised. By default it is the identity function.
+  The reverse of `transformOptions`. Takes the deserialised version of a tab's options object and transforms it such that it is identical to how it was before being serialised. By default it is the identity function.
 
 ## License
 
