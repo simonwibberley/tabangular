@@ -257,6 +257,7 @@ $scope.docs = Tabs.newArea({
 #### Methods
 
 <a id="registerTabType"></a>
+
 ##### `registerTabType` :: `(id : string, options : object) : void`
 
 Registers a tab type. `id` should be a unique string id, `options` should be an object with some combination of the following:
@@ -293,7 +294,9 @@ module.config(function (TabsProvider) {
 });
 ```
 
+
 <a id="typeFetcherFactory"></a>
+<hr />
 ##### `typeFetcherFactory` :: `(factory : function) : void`
 
 Registers a factory function for a tab type fetcher. The tab type fetcher resolves named tab types dynamically, if they haven't been previously registered. The factory function is invoked using Angular's dependency injector, to allow the use of services such at `$http` when resolving tab types. It should return the fetcher function which has the signature `(deferred : Deferred, typeID : string) : void`. The fetcher function is responsible for resolving the deferred object with the relevant tab type (see [`registerTabType`](#registerTabType) for the type options), or rejecting it when no such type can be found. See [$q](https://docs.angularjs.org/api/ng/service/$q) for the `Deferred` api.
@@ -317,6 +320,7 @@ module.config(function (TabsProvider) {
   });
 });
 ```
+
 
 ### `Tabs` :: service
 
@@ -349,12 +353,12 @@ Creates a new tab area. `options` should be an object with some combination of t
 
   The reverse of `transformOptions`. Takes the deserialised version of a tab's options object and transforms it such that it is identical to how it was before being serialised. By default it is the identity function.
 
+
 ### `TabArea` :: class
 
 The `TabArea` class represents an ordered grouping of tabs and provides methods for creating new tabs. A tab area may have only one tab focused at one point in time. TabArea instances are created using the [`Tabs.newArea`](#newArea) method.
 
 #### Methods
-
 <a id="load"></a>
 #### `load` :: `(type : string | object [, options : object]) : Tab`
 
@@ -362,15 +366,20 @@ Loads and returns a new tab. `type` should be a named tab type or an anonymous t
 
 `options` can be anything and is attached to the returned Tab object such that `load(foo, bar).options === bar`.
 
-<a id="load"></a>
+<hr />
+<a id="open"></a>
 #### `open` :: `(type : string | object [, options : object]) : Tab`
 
 Convenience method. As [`TabArea.load`](#load) but calls [`Tab.focus`](#focus) before returning the tab.
 
+<hr />
+<a id="list"></a>
 #### `list` :: `() : [Tab]`
 
 Returns an array of the tabs currently in this area. For performance reasons, it currently returns the internally-used array which should not be modified.
 
+<hr />
+<a id="handleExisting"></a>
 #### `handleExisting` :: `([cb : function (tab : object) : bool]) : void`
 
 Triggers the reloading of tabs from persistent storage.
