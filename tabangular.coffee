@@ -386,18 +386,19 @@ class TabArea extends Evented
     @options.persist? JSON.stringify @_tabs.map (tab) =>
         type: tab.type
         options: @options.transformOptions tab.options
-        active: !!tab.focused
+        focused: !!tab.focused
 
   # calls cb on existing tabs like {type, options, active}. if cb returns
   # true, automatically reloads tab by calling @load(type, options)
   handleExisting: (cb) ->
+    cb = cb or -> true
     if not @_existingReady
       @_existingReadyQueue.push => @handleExisting cb
     else
       for tab in @_existingTabs
         if cb tab
           loaded = @load tab.type, tab.options
-          loaded.focus() if tab.active
+          loaded.focus() if tab.focused
       @_persist()
     @
 

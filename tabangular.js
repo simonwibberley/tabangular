@@ -495,7 +495,7 @@
           return {
             type: tab.type,
             options: _this.options.transformOptions(tab.options),
-            active: !!tab.focused
+            focused: !!tab.focused
           };
         };
       })(this)))) : void 0;
@@ -503,6 +503,9 @@
 
     TabArea.prototype.handleExisting = function(cb) {
       var loaded, tab, _i, _len, _ref;
+      cb = cb || function() {
+        return true;
+      };
       if (!this._existingReady) {
         this._existingReadyQueue.push((function(_this) {
           return function() {
@@ -515,7 +518,7 @@
           tab = _ref[_i];
           if (cb(tab)) {
             loaded = this.load(tab.type, tab.options);
-            if (tab.active) {
+            if (tab.focused) {
               loaded.focus();
             }
           }

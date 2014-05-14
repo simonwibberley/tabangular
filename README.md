@@ -257,7 +257,7 @@ $scope.docs = Tabs.newArea({
 #### Methods
 
 <a id="registerTabType"></a>
-##### `registerTabType(id : string, options : object) : void`
+##### `registerTabType` :: `(id : string, options : object) : void`
 
 Registers a tab type. `id` should be a unique string id, `options` should be an object with some combination of the following:
 
@@ -294,7 +294,7 @@ module.config(function (TabsProvider) {
 ```
 
 <a id="typeFetcherFactory"></a>
-##### `typeFetcherFactory(factory : function) : void`
+##### `typeFetcherFactory` :: `(factory : function) : void`
 
 Registers a factory function for a tab type fetcher. The tab type fetcher resolves named tab types dynamically, if they haven't been previously registered. The factory function is invoked using Angular's dependency injector, to allow the use of services such at `$http` when resolving tab types. It should return the fetcher function which has the signature `(deferred : Deferred, typeID : string) : void`. The fetcher function is responsible for resolving the deferred object with the relevant tab type (see [`registerTabType`](#registerTabType) for the type options), or rejecting it when no such type can be found. See [$q](https://docs.angularjs.org/api/ng/service/$q) for the `Deferred` api.
 
@@ -318,13 +318,14 @@ module.config(function (TabsProvider) {
 });
 ```
 
-### `Tabs` : service
+### `Tabs` :: service
 
 The 'tabs' service allows the creation of new tab areas.
 
 #### Methods
 
-##### `newArea(options : object) : TabArea`
+<a id="newArea"></a>
+#### `newArea` :: `(options : object) : TabArea`
 
 Creates a new tab area. `options` should be an object with some combination of the following:
 
@@ -347,6 +348,75 @@ Creates a new tab area. `options` should be an object with some combination of t
 - `parseOptions` :: `function (options : object) : object`
 
   The reverse of `transformOptions`. Takes the deserialised version of a tab's options object and transforms it such that it is identical to how it was before being serialised. By default it is the identity function.
+
+### `TabArea` :: class
+
+The `TabArea` class represents an ordered grouping of tabs and provides methods for creating new tabs. A tab area may have only one tab focused at one point in time. TabArea instances are created using the [`Tabs.newArea`](#newArea) method.
+
+#### Methods
+
+<a id="load"></a>
+#### `load` :: `(type : string | object [, options : object]) : Tab`
+
+Loads and returns a new tab. `type` should be a named tab type or an anonymous tab type object (see [registerTabType](#registerTabType) for details).
+
+`options` can be anything and is attached to the returned Tab object such that `load(foo, bar).options === bar`.
+
+<a id="load"></a>
+#### `open` :: `(type : string | object [, options : object]) : Tab`
+
+Convenience method. As [`TabArea.load`](#load) but calls [`Tab.focus`](#focus) before returning the tab.
+
+#### `list` :: `() : [Tab]`
+
+Returns an array of the tabs currently in this area. For performance reasons, it currently returns the internally-used array which should not be modified.
+
+#### `handleExisting` :: `([cb : function (tab : object) : bool]) : void`
+
+Triggers the reloading of tabs from persistent storage.
+
+If called without arguments, simply reloads all tabs from storage.
+
+If given the `cb` parameter, calls `cb` on each of the stored tab objects which have the structure:
+
+- `type` :: `string | object`
+  
+  The tab type, as passed into [`TabArea.load`](#load) or [`TabArea.open`](#open) when the tab was created. 
+
+- `focused` :: `bool`
+
+  Whether or not the tab was focused when the area was persisted.
+
+- `options` :: `object`
+
+  The tab options, as gleaned from `Tab.options` when the area was persisted.
+
+If `cb` returns `true`, the tab is automatically reloaded. Hence `area.handleExisting()` is shorthand for `area.handleExisting(function () { return true; })`
+
+Example: 
+
+
+```javascript
+// Some tab types might require event listeners, so you can use `handleExisting`
+// to reload the tabs and attach the event listeners.
+
+area.handleExisting(function (tab) {
+  switch (tab.type) {
+    case "foo":
+      var fooID = tab.options.id;
+      var foo = area.load("foo", tab.options);
+      foo.on("foo_event", function () {
+        $http.post("react/to/foo_event", {fooID: fooID});
+      });
+      tab.focused && foo.focus();
+      return false;
+    case "blah":
+    .
+    .
+    .
+  }
+})
+```
 
 ## License
 
