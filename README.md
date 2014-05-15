@@ -250,7 +250,81 @@ $scope.docs = Tabs.newArea({
 
 ## API
 
-### `TabsProvider` : provider
+### `Evented` :: class
+
+A simple, lightweight events system. Extended by [`Tab`](#Tab) and [`TabArea`](#TabArea), cannot be instantiated directly.
+
+#### Examples
+
+```javascript
+tab.on('foo', function () {
+  console.log("i am foo");
+});
+
+tab.trigger('foo');
+
+// => i am foo
+
+tab.one('bar', function () {
+  console.log("bar happens only once");
+});
+
+tab.trigger('bar');
+
+// => bar happens only once
+
+tab.trigger('bar');
+
+// nothing happens
+
+tab.on('hello', function (name) {
+  console.log("Hello, " + name + "!");
+});
+
+tab.trigger('hello', 'Steve');
+
+// => Hello, Steve!
+
+
+// callbacks have their context set to the relevant object
+
+function hello () {
+  console.log("Hello, " + this.options.name + "!");
+}
+
+tab1.on('hello', hello);
+tab2.on('hello', hello);
+
+tab1.options.name = "John";
+tab2.options.name = "Wilbur";
+
+tab1.trigger('hello');
+
+// => Hello, John!
+
+tab2.trigger('hello');
+
+// => Hello, Wilbur!
+```
+
+#### Methods
+
+#### `on` :: `(event : string, callback : function) : function`
+
+Binds `callback` as a handler for `event`. Returns a function which, when invoked, unbinds the callback.
+
+<hr />
+#### `one` :: `(event : string, callback : function) : function`
+
+As `Evented.on` but unbinds the callback automatically after being invoked for the first time.
+
+<hr />
+#### `trigger` :: `(event : string [, data : object]) : void`
+
+Fires an `event` event, passing `data` as the first parameter to any bound callbacks.
+
+
+### `TabsProvider` :: provider
 
 `TabsProvider` can be used to configure the `Tabs` service.
 
@@ -276,7 +350,7 @@ Registers a tab type. `id` should be a unique string id, `options` should be an 
 
 - `controller` :: `function | string`
   
-  Specifies the controller to call against the scope. Should be a function or a string denoting the controller to use (see [$controller](https://docs.angularjs.org/api/ng/service/$controller)).|
+  Specifies the controller to call against the scope. Should be a function or a string denoting the controller to use (see [$controller](https://docs.angularjs.org/api/ng/service/$controller)).
 
 Examples:
 
@@ -353,7 +427,7 @@ Creates a new tab area. `options` should be an object with some combination of t
 
   The reverse of `transformOptions`. Takes the deserialised version of a tab's options object and transforms it such that it is identical to how it was before being serialised. By default it is the identity function.
 
-
+<a name="TabArea"></a>
 ### `TabArea` :: class
 
 The `TabArea` class represents an ordered grouping of tabs and provides methods for creating new tabs. A tab area may have only one tab focused at one point in time. TabArea instances are created using the [`Tabs.newArea`](#newArea) method.
@@ -431,8 +505,11 @@ area.handleExisting(function (tab) {
 
 - `loaded`
 
-  Triggered when the tab area is connected to it's content element, i.e. the DOM node in which tab contents are placed.
+  Triggered when the tab area is connected to it's content element via the [`tabContent`](#tabContent) directive.
 
+  Note that waiting on the `loaded` event to call `TabArea` methods is not required, since actions not ready to be undertaken are automatically put in a queue and executed later at the appropriate time.
+
+<a name="Tab"></a>
 ### Tab : class/pseudo-service
 
 `Tab` instances are created using the [`TabArea.load`](#load) or [`TabArea.open`](#open) methods.
@@ -443,14 +520,145 @@ e.g.
 
 ```javascript
 function MyTabCtrl (Tab) {
-  Tab.on("update", function () {
-    $scope.title = Tab.options.title;
+  // acquire resources
+
+  Tab.on("closed", function () {
+    // release resources
   });
-  Tab.trigger("update");
 }
 ```
 
+#### Methods
 
+<a name="focus">
+#### `focus` :: `() : Tab`
+
+Display's the tab's content element, sets [`Tab.focused`](#focused) to true, and triggers the [`focused`](#focused) event if/when the tab has finished loading. Returns the tab in question.
+
+<hr />
+<a name="close">
+#### `close` :: `([silent : bool]) : Tab`
+
+When called with [`Tab.autoClose`](#autoClose) set to false and no arguments or `silent` set to `false`, simply triggers the `close` event.
+
+When called with `silent` set to `true`, closes the tab. This involves:
+
+- Removing the tab's content element from the DOM.
+- Destroying the tab's scope (if it has its own)
+- Triggering the `closed` event.
+- Focusing the previously focused tab, if such a tab exists.
+
+Returns the tab in question.
+
+<hr />
+<a name="move">
+#### `move` :: `(toArea : TabArea, idx : integer) : Tab`
+
+Moves the tab to `toArea` and positions it at the `idx`th place.
+
+Returns the tab in question.
+
+
+<hr />
+<a name="deferLoading"></a>
+#### `deferLoading` :: `() : Tab`
+
+When called by the tab's controller, or before the controller has been executed, `deferLoading` prevents the automatic triggering of the `loaded` event.
+
+This is useful if it doesn't make sense to show the tab's content before its controller has had a chance to, e.g. asynchronously fetch some data.
+
+Returns the tab in question.
+
+<hr />
+<a name="doneLoading"></a>
+#### `doneLoading` :: `() : Tab`
+
+Triggers the `loaded` event and sets `Tab.loading` to false.
+
+Returns the tab in question.
+
+<hr />
+<a name="enableAutoClose"></a>
+#### `enableAutoClose` :: `() : Tab`
+
+Sets `Tab.autoClose` to true and returns the tab in question.
+
+<hr />
+<a name="disableAutoClose"></a>
+#### `disableAutoClose` :: `() : Tab`
+
+Sets `Tab.autoClose` to false and returns the tab in question.
+
+<a name="Tab.Events"></a>
+#### Events
+
+- `loaded`
+
+  If [`Tab.deferLoading`](#deferLoading) was called, the `loaded` event is triggered when [`Tab.doneLoading`](#doneLoading) is called. Otherwise it is triggered when the tab's content element has been placed in the DOM.
+
+- `dom_ready`
+
+  Triggered when the tab's content element has been placed in the DOM. This is useful if [`Tab.deferLoading`](#deferLoading) was called.
+
+- `focused`
+
+  Triggered when the tab's content element is shown.
+
+- `close`
+
+  Triggered when [`Tab.close()`](#close) is called if [`Tab.autoClose`](#autoClose) is set to false.
+
+- `closed`
+
+  Triggered when [`Tab.close(true)`](#close) is called, or when [`Tab.close()`](#close) is called if [`Tab.autoClose`](#autoClose) is set to true.
+
+<a name="Tab.Properties"></a>
+#### Properties
+
+<a name="type"></a>
+#### `type` :: `string | object`
+
+As passed into [`TabArea.load`](#load) or [`TabArea.open`](#open).
+
+Note that if it is an object and contains non-json-serializable data (e.g. a function), the persistence mechanism will not work. See [`Tabs.newArea`](#newArea).
+
+<a name="options"></a>
+#### `options` :: `object`
+
+As passed into [`TabArea.load`](#load) or [`TabArea.open`](#open).
+
+Note that if it is or contains non-json-serializable data (e.g. a function), the persistence mechanism will not work without specifying custom `parseOptions` and `transformOptions` functions. See [`Tabs.newArea`](#newArea).
+
+<a name="autoClose"></a>
+#### `autoClose` :: `bool`
+
+When set to `true`, causes [`Tab.close()`](#close) to be equivalent to [`Tab.close(true)`](#close).
+
+<a name="focused"></a>
+#### `focused` :: `bool`
+
+`true` if the tab's content element is visible, `false` otherwise. Should not be manually set.
+
+<a name="closed"></a>
+#### `closed` :: `bool`
+
+`true` if the tab has been closed, `false` otherwise. Should not be manually set.
+
+<a name="loading"></a>
+#### `loading` :: `bool`
+
+`true` if the tab has not finished loading, `false` otherwise. Should not be manually set.
+
+
+### `tabContent` :: directive
+
+Restricted to an attribute which should evaluate to a tab area. Registers the element with the TabArea so it knows where to put content elements.
+
+Example: 
+
+```html
+<div tab-content="myTabArea"></div>
+```
 
 ## License
 
