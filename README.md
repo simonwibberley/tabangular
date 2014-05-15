@@ -4,6 +4,14 @@ Dynamic persistent tabbed content for [Angular.JS](http://angularjs.org).
 
 Useful for single-page interactive web apps which allow the user to organise content by tabs, e.g. a text editor.
 
+## Contents
+
+- [Data Model](#data-model)
+- [Building](#building)
+- [Usage](#usage)
+- [API](#api)
+- [License](#license)
+
 ## Data Model
 
 Tabs...
@@ -250,10 +258,53 @@ $scope.docs = Tabs.newArea({
 
 ## API
 
+### Contents
+
+- [Evented](#Evented)
+  - [Examples](#Evented.Examples)
+  - [Methods](#Evented.Methods)
+    - [`on`](#on)
+    - [`one`](#one)
+    - [`trigger`](#trigger)
+- [TabsProvider](#TabsProvider)
+  - [Methods](#TabsProvider.Methods)
+    - [`registerTabType`](#registerTabType)
+    - [`typeFetcherFactory`](#typeFetcherFactory)
+- [Tabs](#Tabs)
+  - [Methods](#Tabs.Methods)
+    - [`newArea`](#newArea)
+- [TabArea](#TabArea)
+  - [Methods](#TabArea.Methods)
+    - [`load`](#load)
+    - [`open`](#open)
+    - [`list`](#list)
+    - [`handleExisting`](#handleExisting)
+  - [Events]
+- [Tab](#Tab)
+  - [Methods](#Tabs.Methods)
+    - [`focus`](#focus)
+    - [`close`](#close)
+    - [`move`](#move)
+    - [`deferLoading`](#deferLoading)
+    - [`doneLoading`](#doneLoading)
+    - [`enableAutoClose`](#enableAutoClose)
+    - [`disableAutoClose`](#disableAutoClose)
+  - [Events](#Tab.Events)
+  - [Properties](#Tab.Properties)
+    - [`type`](#type)
+    - [`options`](#options)
+    - [`autoClose`](#autoClose)
+    - [`focused`](#focused)
+    - [`closed`](#closed)
+    - [`loading`](#loading)
+-[tabContent](#tabContent)
+
+<a name='Evented'></a>
 ### `Evented` :: class
 
 A simple, lightweight events system. Extended by [`Tab`](#Tab) and [`TabArea`](#TabArea), cannot be instantiated directly.
 
+<a name='Evented.Examples'></a>
 #### Examples
 
 ```javascript
@@ -307,27 +358,33 @@ tab2.trigger('hello');
 // => Hello, Wilbur!
 ```
 
+<a name='Evented.Methods'></a>
 #### Methods
 
+<a name='on'></a>
 ##### `on` :: `(event : string, callback : function) : function`
 
 Binds `callback` as a handler for `event`. Returns a function which, when invoked, unbinds the callback.
 
 <hr />
+<a name='one'></a>
 ##### `one` :: `(event : string, callback : function) : function`
 
 As `Evented.on` but unbinds the callback automatically after being invoked for the first time.
 
 <hr />
+<a name='trigger'></a>
 ##### `trigger` :: `(event : string [, data : object]) : void`
 
 Fires an `event` event, passing `data` as the first parameter to any bound callbacks.
 
 
+<a name='TabsProvider'></a>
 ### `TabsProvider` :: provider
 
 `TabsProvider` can be used to configure the `Tabs` service.
 
+<a name='TabsProvider.Methods'></a>
 #### Methods
 
 <a name="registerTabType"></a>
@@ -395,11 +452,12 @@ module.config(function (TabsProvider) {
 });
 ```
 
-
+<a name="Tabs"></a>
 ### `Tabs` :: service
 
 The 'tabs' service allows the creation of new tab areas.
 
+<a name="Tabs.Methods"></a>
 #### Methods
 
 <a name="newArea"></a>
@@ -428,10 +486,11 @@ Creates a new tab area. `options` should be an object with some combination of t
   The reverse of `transformOptions`. Takes the deserialised version of a tab's options object and transforms it such that it is identical to how it was before being serialised. By default it is the identity function.
 
 <a name="TabArea"></a>
-### `TabArea` :: class
+### `TabArea` :: class extends `Evented`
 
 The `TabArea` class represents an ordered grouping of tabs and provides methods for creating new tabs. A tab area may have only one tab focused at one point in time. TabArea instances are created using the [`Tabs.newArea`](#newArea) method.
 
+<a name="TabArea.Methods"></a>
 #### Methods
 <a name="load"></a>
 ##### `load` :: `(type : string | object [, options : object]) : Tab`
@@ -510,7 +569,7 @@ area.handleExisting(function (tab) {
   Note that waiting on the `loaded` event to call `TabArea` methods is not required, since actions not ready to be undertaken are automatically put in a queue and executed later at the appropriate time.
 
 <a name="Tab"></a>
-### Tab : class/pseudo-service
+### `Tab` : class extends `Evented`
 
 `Tab` instances are created using the [`TabArea.load`](#load) or [`TabArea.open`](#open) methods.
 
@@ -528,6 +587,7 @@ function MyTabCtrl (Tab) {
 }
 ```
 
+<a name="Tab.Methods"></a>
 #### Methods
 
 <a name="focus">
@@ -650,6 +710,7 @@ When set to `true`, causes [`Tab.close()`](#close) to be equivalent to [`Tab.clo
 `true` if the tab has not finished loading, `false` otherwise. Should not be manually set.
 
 
+<a name="tabContent"></a>
 ### `tabContent` :: directive
 
 Restricted to an attribute which should evaluate to a tab area. Registers the element with the TabArea so it knows where to put content elements.
