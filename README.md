@@ -279,7 +279,7 @@ $scope.docs = Tabs.newArea({
     - [`open`](#open)
     - [`list`](#list)
     - [`handleExisting`](#handleExisting)
-  - [Events]
+  - [Events](#TabArea.Events)
 - [Tab](#Tab)
   - [Methods](#Tabs.Methods)
     - [`focus`](#focus)
@@ -297,7 +297,7 @@ $scope.docs = Tabs.newArea({
     - [`focused`](#focused)
     - [`closed`](#closed)
     - [`loading`](#loading)
--[tabContent](#tabContent)
+- [tabContent](#tabContent)
 
 <a name='Evented'></a>
 ### `Evented` :: class
@@ -560,6 +560,7 @@ area.handleExisting(function (tab) {
 })
 ```
 
+<a name="TabArea.Events"></a>
 #### Events
 
 - `loaded`
