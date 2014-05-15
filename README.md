@@ -309,17 +309,17 @@ tab2.trigger('hello');
 
 #### Methods
 
-#### `on` :: `(event : string, callback : function) : function`
+##### `on` :: `(event : string, callback : function) : function`
 
 Binds `callback` as a handler for `event`. Returns a function which, when invoked, unbinds the callback.
 
 <hr />
-#### `one` :: `(event : string, callback : function) : function`
+##### `one` :: `(event : string, callback : function) : function`
 
 As `Evented.on` but unbinds the callback automatically after being invoked for the first time.
 
 <hr />
-#### `trigger` :: `(event : string [, data : object]) : void`
+##### `trigger` :: `(event : string [, data : object]) : void`
 
 Fires an `event` event, passing `data` as the first parameter to any bound callbacks.
 
@@ -332,7 +332,7 @@ Fires an `event` event, passing `data` as the first parameter to any bound callb
 
 <a name="registerTabType"></a>
 
-#### `registerTabType` :: `(id : string, options : object) : void`
+##### `registerTabType` :: `(id : string, options : object) : void`
 
 Registers a tab type. `id` should be a unique string id, `options` should be an object with some combination of the following:
 
@@ -371,7 +371,7 @@ module.config(function (TabsProvider) {
 
 <a name="typeFetcherFactory"></a>
 <hr />
-#### `typeFetcherFactory` :: `(factory : function) : void`
+##### `typeFetcherFactory` :: `(factory : function) : void`
 
 Registers a factory function for a tab type fetcher. The tab type fetcher resolves named tab types dynamically, if they haven't been previously registered. The factory function is invoked using Angular's dependency injector, to allow the use of services such at `$http` when resolving tab types. It should return the fetcher function which has the signature `(deferred : Deferred, typeID : string) : void`. The fetcher function is responsible for resolving the deferred object with the relevant tab type (see [`registerTabType`](#registerTabType) for the type options), or rejecting it when no such type can be found. See [$q](https://docs.angularjs.org/api/ng/service/$q) for the `Deferred` api.
 
@@ -403,7 +403,7 @@ The 'tabs' service allows the creation of new tab areas.
 #### Methods
 
 <a name="newArea"></a>
-#### `newArea` :: `(options : object) : TabArea`
+##### `newArea` :: `(options : object) : TabArea`
 
 Creates a new tab area. `options` should be an object with some combination of the following:
 
@@ -434,7 +434,7 @@ The `TabArea` class represents an ordered grouping of tabs and provides methods 
 
 #### Methods
 <a name="load"></a>
-#### `load` :: `(type : string | object [, options : object]) : Tab`
+##### `load` :: `(type : string | object [, options : object]) : Tab`
 
 Loads and returns a new tab. `type` should be a named tab type or an anonymous tab type object (see [registerTabType](#registerTabType) for details).
 
@@ -442,19 +442,19 @@ Loads and returns a new tab. `type` should be a named tab type or an anonymous t
 
 <hr />
 <a name="open"></a>
-#### `open` :: `(type : string | object [, options : object]) : Tab`
+##### `open` :: `(type : string | object [, options : object]) : Tab`
 
 Convenience method. As [`TabArea.load`](#load) but calls [`Tab.focus`](#focus) before returning the tab.
 
 <hr />
 <a name="list"></a>
-#### `list` :: `() : [Tab]`
+##### `list` :: `() : [Tab]`
 
 Returns an array of the tabs currently in this area. For performance reasons, it currently returns the internally-used array which should not be modified.
 
 <hr />
 <a name="handleExisting"></a>
-#### `handleExisting` :: `([cb : function (tab : object) : bool]) : void`
+##### `handleExisting` :: `([cb : function (tab : object) : bool]) : void`
 
 Triggers the reloading of tabs from persistent storage.
 
@@ -531,13 +531,13 @@ function MyTabCtrl (Tab) {
 #### Methods
 
 <a name="focus">
-#### `focus` :: `() : Tab`
+##### `focus` :: `() : Tab`
 
 Display's the tab's content element, sets [`Tab.focused`](#focused) to true, and triggers the [`focused`](#focused) event if/when the tab has finished loading. Returns the tab in question.
 
 <hr />
 <a name="close">
-#### `close` :: `([silent : bool]) : Tab`
+##### `close` :: `([silent : bool]) : Tab`
 
 When called with [`Tab.autoClose`](#autoClose) set to false and no arguments or `silent` set to `false`, simply triggers the `close` event.
 
@@ -552,7 +552,7 @@ Returns the tab in question.
 
 <hr />
 <a name="move">
-#### `move` :: `(toArea : TabArea, idx : integer) : Tab`
+##### `move` :: `(toArea : TabArea, idx : integer) : Tab`
 
 Moves the tab to `toArea` and positions it at the `idx`th place.
 
@@ -561,7 +561,7 @@ Returns the tab in question.
 
 <hr />
 <a name="deferLoading"></a>
-#### `deferLoading` :: `() : Tab`
+##### `deferLoading` :: `() : Tab`
 
 When called by the tab's controller, or before the controller has been executed, `deferLoading` prevents the automatic triggering of the `loaded` event.
 
@@ -571,7 +571,7 @@ Returns the tab in question.
 
 <hr />
 <a name="doneLoading"></a>
-#### `doneLoading` :: `() : Tab`
+##### `doneLoading` :: `() : Tab`
 
 Triggers the `loaded` event and sets `Tab.loading` to false.
 
@@ -579,13 +579,13 @@ Returns the tab in question.
 
 <hr />
 <a name="enableAutoClose"></a>
-#### `enableAutoClose` :: `() : Tab`
+##### `enableAutoClose` :: `() : Tab`
 
 Sets `Tab.autoClose` to true and returns the tab in question.
 
 <hr />
 <a name="disableAutoClose"></a>
-#### `disableAutoClose` :: `() : Tab`
+##### `disableAutoClose` :: `() : Tab`
 
 Sets `Tab.autoClose` to false and returns the tab in question.
 
@@ -616,36 +616,36 @@ Sets `Tab.autoClose` to false and returns the tab in question.
 #### Properties
 
 <a name="type"></a>
-#### `type` :: `string | object`
+##### `type` :: `string | object`
 
 As passed into [`TabArea.load`](#load) or [`TabArea.open`](#open).
 
 Note that if it is an object and contains non-json-serializable data (e.g. a function), the persistence mechanism will not work. See [`Tabs.newArea`](#newArea).
 
 <a name="options"></a>
-#### `options` :: `object`
+##### `options` :: `object`
 
 As passed into [`TabArea.load`](#load) or [`TabArea.open`](#open).
 
 Note that if it is or contains non-json-serializable data (e.g. a function), the persistence mechanism will not work without specifying custom `parseOptions` and `transformOptions` functions. See [`Tabs.newArea`](#newArea).
 
 <a name="autoClose"></a>
-#### `autoClose` :: `bool`
+##### `autoClose` :: `bool`
 
 When set to `true`, causes [`Tab.close()`](#close) to be equivalent to [`Tab.close(true)`](#close).
 
 <a name="focused"></a>
-#### `focused` :: `bool`
+##### `focused` :: `bool`
 
 `true` if the tab's content element is visible, `false` otherwise. Should not be manually set.
 
 <a name="closed"></a>
-#### `closed` :: `bool`
+##### `closed` :: `bool`
 
 `true` if the tab has been closed, `false` otherwise. Should not be manually set.
 
 <a name="loading"></a>
-#### `loading` :: `bool`
+##### `loading` :: `bool`
 
 `true` if the tab has not finished loading, `false` otherwise. Should not be manually set.
 
