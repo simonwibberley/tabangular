@@ -80,13 +80,13 @@
       if ((ons = this._handlers[ev]) != null) {
         for (_i = 0, _len = ons.length; _i < _len; _i++) {
           cb = ons[_i];
-          cb(data);
+          cb.call(this, data);
         }
       }
       if ((ones = this._onceHandlers[ev]) != null) {
         for (_j = 0, _len1 = ones.length; _j < _len1; _j++) {
           cb = ones[_j];
-          cb(data);
+          cb.call(this, data);
         }
       }
       if (ones != null) {
@@ -312,24 +312,26 @@
     }
 
     Tab.prototype.deferLoading = function() {
-      return this.loadingDeferred = true;
+      this.loadingDeferred = true;
+      return this;
     };
 
     Tab.prototype.doneLoading = function() {
-      this.loading = false;
-      this.area._scope.$root.$$phase || this.area._scope.$apply();
-      if (!this.closed) {
-        return this.trigger('loaded');
+      if (this.loading) {
+        this.loading = false;
+        this.area._scope.$root.$$phase || this.area._scope.$apply();
+        if (!this.closed) {
+          this.trigger('loaded');
+        }
       }
+      return this;
     };
 
     Tab.prototype.close = function(silent) {
       var _ref;
       if (this.closed) {
         throw new Error("Tab already closed");
-      } else if (!silent) {
-        this.trigger("close");
-      } else {
+      } else if (silent || this.autoClose) {
         removeFromArray(this.area._tabs, this);
         removeFromArray(this.area._focusStack, this);
         this.closed = true;
@@ -348,25 +350,20 @@
             this.focused = false;
           }
         }
+      } else {
+        this.trigger("close");
       }
       return this;
     };
 
     Tab.prototype.enableAutoClose = function() {
-      if (this._offAutoClose == null) {
-        return this._offAutoClose = this.on("close", (function(_this) {
-          return function() {
-            return _this.close(true);
-          };
-        })(this));
-      }
+      this.autoClose = true;
+      return this;
     };
 
     Tab.prototype.disableAutoClose = function() {
-      if (typeof this._offAutoClose === "function") {
-        this._offAutoClose();
-      }
-      return delete this._offAutoClose;
+      this.autoClose = false;
+      return this;
     };
 
     Tab.prototype.focus = function() {
@@ -415,7 +412,8 @@
         this.focused = false;
         this.focus();
       }
-      return this.area._persist();
+      this.area._persist();
+      return this;
     };
 
     return Tab;

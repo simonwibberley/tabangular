@@ -58,8 +58,8 @@ class Evented
   one: (ev, cb) -> attach @, @_onceHandlers, ev, cb
 
   trigger: (ev, data) ->
-    cb(data) for cb in ons if (ons = @_handlers[ev])?
-    cb(data) for cb in ones if (ones = @_onceHandlers[ev])?
+    cb.call(@, data) for cb in ons if (ons = @_handlers[ev])?
+    cb.call(@, data) for cb in ones if (ones = @_onceHandlers[ev])?
     ones?.length = 0
     return
 
@@ -243,19 +243,20 @@ class Tab extends Evented
 
   deferLoading: ->
     @loadingDeferred = true
+    @
 
   doneLoading: ->
-    @loading = false
-    @area._scope.$root.$$phase or @area._scope.$apply()
-    if not @closed
-      @trigger 'loaded'
+    if @loading
+      @loading = false
+      @area._scope.$root.$$phase or @area._scope.$apply()
+      if not @closed
+        @trigger 'loaded'
+    @
 
   close: (silent) ->
     if @closed
       throw new Error "Tab already closed"
-    else if not silent
-      @trigger "close"
-    else
+    else if silent or @autoClose
       removeFromArray @area._tabs, @
       removeFromArray @area._focusStack, @
 
@@ -278,15 +279,17 @@ class Tab extends Evented
           (lastItem(@area._focusStack) or lastItem(@area._tabs))?.focus()
 
           @focused = false
+    else
+      @trigger "close"
     @
 
   enableAutoClose: ->
-    if !@_offAutoClose?
-      @_offAutoClose = @on "close", => @close true
+    @autoClose = true
+    @
 
   disableAutoClose: ->
-    @_offAutoClose?()
-    delete @_offAutoClose
+    @autoClose = false
+    @
 
   focus: ->
     if @loading
@@ -328,6 +331,7 @@ class Tab extends Evented
       @focus()
 
     @area._persist()
+    @
 
 
 DEFAULT_TAB_AREA_OPTIONS =
