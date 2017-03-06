@@ -255,8 +255,10 @@ class Tab extends Evented
 
   close: (silent) ->
     if @closed
-      throw new Error "Tab already closed"
-    else if silent or @autoClose
+      #throw new Error "Tab already closed"
+    else if not silent
+      @trigger "close"
+    else
       removeFromArray @area._tabs, @
       removeFromArray @area._focusStack, @
 
@@ -279,8 +281,7 @@ class Tab extends Evented
           (lastItem(@area._focusStack) or lastItem(@area._tabs))?.focus()
 
           @focused = false
-    else
-      @trigger "close"
+
     @
 
   enableAutoClose: ->
@@ -301,6 +302,7 @@ class Tab extends Evented
         current = @area._focusStack[len-1]
         current._elem.addClass "tabangular-hide"
         current.focused = false
+        
       
       @focused = true
 
