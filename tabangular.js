@@ -1,10 +1,12 @@
 
-/** License: http://www.apache.org/licenses/LICENSE-2.0
-  * Copyright (c) 2014 David Sheldrick
+/**
+ * Tabangular.js v1.0.0
+ * License: http://www.apache.org/licenses/LICENSE-2.0
+ * Copyright (c) 2014 David Sheldrick
  */
 
 (function() {
-  var DEFAULT_TAB_AREA_OPTIONS, Evented, Tab, TabArea, TabsProvider, TabsService, attach, removeFromArray, tabTypeDefaults, tabangular,
+  var DEFAULT_TAB_AREA_OPTIONS, Evented, Tab, TabArea, TabsProvider, TabsService, attach, lastItem, removeFromArray, tabTypeDefaults, tabangular,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
@@ -26,6 +28,10 @@
     } else {
       return false;
     }
+  };
+
+  lastItem = function(arr) {
+    return arr[arr.length - 1];
   };
 
   attach = function(ctx, handlersObj, event, callback) {
@@ -74,13 +80,13 @@
       if ((ons = this._handlers[ev]) != null) {
         for (_i = 0, _len = ons.length; _i < _len; _i++) {
           cb = ons[_i];
-          cb(data);
+          cb.call(this, data);
         }
       }
       if ((ones = this._onceHandlers[ev]) != null) {
         for (_j = 0, _len1 = ones.length; _j < _len1; _j++) {
           cb = ones[_j];
-          cb(data);
+          cb.call(this, data);
         }
       }
       if (ones != null) {
@@ -119,14 +125,12 @@
      *     scope: boolean
      *        specifies whether or not to define a new scope for
      *        tabs of this type. defaults to true
-     *     templateURL: string
-     *        specifies a url from which to load a template
-     *     templateString: string
+     *     templateUrl: string
+     *        specifies a url from which to load a template (or the id of a
+     *        template already in the dom)
+     *     template: string
      *        specifies the template to use in the tab. takes
-     *        precedence over templateURL
-     *     templateID: string
-     *        specifies the DOM element ID of the template to use.
-     *        takes precedence over templateURL and templateString
+     *        precedence over templateUrl
      *     controller: function or string
      *        specifies the controller to call against the scope.
      *        Should be a function or a string denoting the
@@ -143,8 +147,18 @@
       }
     };
 
-    TabsProvider.prototype.setTabTypeFetcher = function(_tabTypeFetcher) {
-      this._tabTypeFetcher = _tabTypeFetcher;
+    TabsProvider.prototype.typeFetcherFactory = function(_typeFetcherFactory) {
+      this._typeFetcherFactory = _typeFetcherFactory;
+    };
+
+    TabsProvider.prototype._reifyFetcher = function($injector) {
+      if (this._typeFetcherFactory != null) {
+        this._tabTypeFetcher = $injector.invoke(this._typeFetcherFactory);
+        delete this._typeFetcherFactory;
+        if (typeof this._tabTypeFetcher !== 'function') {
+          throw new Error("Tab type fetcher must be a function");
+        }
+      }
     };
 
     return TabsProvider;
@@ -163,16 +177,13 @@
     }
 
     TabsService.prototype._getTabType = function(id) {
-      var deferred, injectables, promise;
+      var deferred, promise;
+      this.provider._reifyFetcher(this.$injector);
       if (this.provider._tabTypes[id] != null) {
         promise = this.$q.when(this.provider._tabTypes[id]);
       } else if (this.provider._tabTypeFetcher != null) {
         deferred = this.$q.defer();
-        injectables = {
-          deferred: deferred,
-          typeID: id
-        };
-        this.$injector.invoke(this.provider._tabTypeFetcher, null, injectables);
+        this.provider._tabTypeFetcher(deferred, id);
         this.provider._tabTypes[id] = deferred.promise;
         promise = deferred.promise;
       } else {
@@ -202,7 +213,16 @@
               return _this.__compileContent(tab, parentScope, cb, type);
             }
           };
-        })(this));
+        })(this), function(reason) {
+          var type;
+          console.warn("Tab type not found: " + tab.type);
+          console.warn("Reason: " + reason);
+          type = {
+            templateString: "Tab type '" + tab.type + "' not found because " + reason,
+            scope: false
+          };
+          return this.__compileContent(tab, parentScope, cb, type);
+        });
       } else {
         return this.__compileContent(tab, parentScope, cb, tab.type);
       }
@@ -218,11 +238,9 @@
           return cb();
         };
       })(this);
-      if (type.templateID != null) {
-        return doCompile(document.getElementById(type.templateID).innerHTML);
-      } else if (type.templateString != null) {
-        return doCompile(type.templateString);
-      } else if ((url = type.templateURL) != null) {
+      if (type.template != null) {
+        return doCompile(type.template);
+      } else if ((url = type.templateUrl) != null) {
         if ((cached = this.$templateCache.get(url)) != null) {
           return doCompile(cached);
         } else {
@@ -257,7 +275,12 @@
     };
 
     TabsService.prototype.newArea = function(options) {
-      return new TabArea(this, options);
+      var area;
+      area = new TabArea(this, options);
+      window.addEventListener("beforeunload", function() {
+        return area._persist();
+      });
+      return area;
     };
 
     return TabsService;
@@ -289,24 +312,26 @@
     }
 
     Tab.prototype.deferLoading = function() {
-      return this.loadingDeferred = true;
+      this.loadingDeferred = true;
+      return this;
     };
 
     Tab.prototype.doneLoading = function() {
-      this.loading = false;
-      this.area._scope.$root.$$phase || this.area._scope.$apply();
-      if (!this.closed) {
-        return this.trigger('loaded');
+      if (this.loading) {
+        this.loading = false;
+        this.area._scope.$root.$$phase || this.area._scope.$apply();
+        if (!this.closed) {
+          this.trigger('loaded');
+        }
       }
+      return this;
     };
 
     Tab.prototype.close = function(silent) {
-      var len;
+      var _ref;
       if (this.closed) {
         throw new Error("Tab already closed");
-      } else if (!silent) {
-        this.trigger("close");
-      } else {
+      } else if (silent || this.autoClose) {
         removeFromArray(this.area._tabs, this);
         removeFromArray(this.area._focusStack, this);
         this.closed = true;
@@ -319,33 +344,26 @@
           this._elem = this._scope = null;
           this.trigger("closed");
           if (this.focused) {
-            if ((len = this.area._focusStack.length) !== 0) {
-              this.area._focusStack[len - 1].focus();
-            } else if (this.area._tabs.length !== 0) {
-              this.area._tabs[0].focus();
+            if ((_ref = lastItem(this.area._focusStack) || lastItem(this.area._tabs)) != null) {
+              _ref.focus();
             }
             this.focused = false;
           }
         }
+      } else {
+        this.trigger("close");
       }
       return this;
     };
 
     Tab.prototype.enableAutoClose = function() {
-      if (this._offAutoClose == null) {
-        return this._offAutoClose = this.on("close", (function(_this) {
-          return function() {
-            return _this.close(true);
-          };
-        })(this));
-      }
+      this.autoClose = true;
+      return this;
     };
 
     Tab.prototype.disableAutoClose = function() {
-      if (typeof this._offAutoClose === "function") {
-        this._offAutoClose();
-      }
-      return delete this._offAutoClose;
+      this.autoClose = false;
+      return this;
     };
 
     Tab.prototype.focus = function() {
@@ -371,6 +389,30 @@
         this.area._persist();
         this.trigger("focused");
       }
+      return this;
+    };
+
+    Tab.prototype.move = function(toArea, idx) {
+      var _ref;
+      removeFromArray(this.area._tabs, this);
+      if (toArea !== this.area) {
+        removeFromArray(this.area._focusStack, this);
+        this.area._persist();
+        toArea._contentPane.append(this._elem);
+        if (this.focused) {
+          if ((_ref = lastItem(this.area._focusStack) || lastItem(this.area._tabs)) != null) {
+            _ref.focus();
+          }
+        }
+        this.area = toArea;
+      }
+      idx = Math.min(Math.max(0, idx), this.area._tabs.length);
+      this.area._tabs.splice(idx, 0, this);
+      if (this.focused || this.area._tabs.length === 1) {
+        this.focused = false;
+        this.focus();
+      }
+      this.area._persist();
       return this;
     };
 
@@ -415,9 +457,11 @@
         _base.getExisting((function(_this) {
           return function(json) {
             var cb, _i, _len, _ref;
+            json = (json != null ? json.trim() : void 0) || "[]";
             _this._existingReady = true;
             _this._existingTabs = JSON.parse(json).map(function(tab) {
-              return tab.options = _this.options.parseOptions(tab.options);
+              tab.options = _this.options.parseOptions(tab.options);
+              return tab;
             });
             _ref = _this._existingReadyQueue;
             for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -449,7 +493,7 @@
           return {
             type: tab.type,
             options: _this.options.transformOptions(tab.options),
-            active: !!tab.focused
+            focused: !!tab.focused
           };
         };
       })(this)))) : void 0;
@@ -457,6 +501,9 @@
 
     TabArea.prototype.handleExisting = function(cb) {
       var loaded, tab, _i, _len, _ref;
+      cb = cb || function() {
+        return true;
+      };
       if (!this._existingReady) {
         this._existingReadyQueue.push((function(_this) {
           return function() {
@@ -469,7 +516,7 @@
           tab = _ref[_i];
           if (cb(tab)) {
             loaded = this.load(tab.type, tab.options);
-            if (tab.active) {
+            if (tab.focused) {
               loaded.focus();
             }
           }

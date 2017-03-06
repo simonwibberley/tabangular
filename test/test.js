@@ -2,27 +2,35 @@ var test = angular.module('test', ['tabangular']);
 
 test.config(function (TabsProvider) {
   TabsProvider.registerTabType("input", {
-    templateURL: 'templates/input.html',
+    templateUrl: 'templates/input.html',
     controller: 'InputCtrl'
   });
 
-  TabsProvider.setTabTypeFetcher(function ($window, deferred, typeID) {
-    if (typeID === 'fetched') {
-      $window.setTimeout(function () {
-        deferred.resolve({
-          templateString: '<h4>This junk was resolved: {{options.title}}</h4>',
-          scope: false
-        });
-      })
-    }
+  TabsProvider.typeFetcherFactory(function ($window) {
+    return function (deferred, typeID) {
+      if (typeID === 'fetched') {
+        $window.setTimeout(function () {
+          deferred.resolve({
+            template: '<h4>This junk was resolved: {{options.title}}</h4>',
+            scope: false
+          });
+        })
+      }
+    };
   });
 });
 
 function NestedCtrl ($scope, Tabs, Tab) {
   $scope.options = (Tab && Tab.options) || {title: "Main Page"};
   $scope.tabs = Tabs.newArea({id: $scope.options.title});
+  $scope.tabs2 = Tabs.newArea({id: $scope.options.title + "2"});
 
   $scope.tabs.handleExisting(function (tab) {
+    console.log(tab, tab.type === 'input');
+    return tab.type === 'input';
+  });
+
+  $scope.tabs2.handleExisting(function (tab) {
     console.log(tab);
     return tab.type === 'input';
   });
@@ -72,7 +80,7 @@ function NestedCtrl ($scope, Tabs, Tab) {
 
     $scope.tabs.open({
       controller: ctrl,
-      templateString: template 
+      template: template 
     }, {title: name});
     
   };
@@ -80,7 +88,7 @@ function NestedCtrl ($scope, Tabs, Tab) {
   $scope.openNested = function (title) {
     $scope.tabs.open({
       controller: 'NestedCtrl',
-      templateID: 'main.html'
+      templateUrl: 'main.html'
     }, {title: title});
   }
 }

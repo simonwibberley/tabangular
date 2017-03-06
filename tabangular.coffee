@@ -1,5 +1,7 @@
-###* License: http://www.apache.org/licenses/LICENSE-2.0
- # Copyright (c) 2014 David Sheldrick
+###*
+# Tabangular.js v1.0.0
+# License: http://www.apache.org/licenses/LICENSE-2.0
+# Copyright (c) 2014 David Sheldrick
 ###
 
 tabangular = angular.module "tabangular", []
@@ -20,6 +22,9 @@ removeFromArray = (arr, item) ->
     true
   else
     false
+
+lastItem = (arr) ->
+  arr[arr.length-1]
 
 #################
 # Events system #
@@ -53,8 +58,8 @@ class Evented
   one: (ev, cb) -> attach @, @_onceHandlers, ev, cb
 
   trigger: (ev, data) ->
-    cb(data) for cb in ons if (ons = @_handlers[ev])?
-    cb(data) for cb in ones if (ones = @_onceHandlers[ev])?
+    cb.call(@, data) for cb in ons if (ons = @_handlers[ev])?
+    cb.call(@, data) for cb in ones if (ones = @_onceHandlers[ev])?
     ones?.length = 0
     return
 
@@ -86,14 +91,12 @@ class TabsProvider
   #     scope: boolean
   #        specifies whether or not to define a new scope for
   #        tabs of this type. defaults to true
-  #     templateURL: string
-  #        specifies a url from which to load a template
-  #     templateString: string
+  #     templateUrl: string
+  #        specifies a url from which to load a template (or the id of a
+  #        template already in the dom)
+  #     template: string
   #        specifies the template to use in the tab. takes
-  #        precedence over templateURL
-  #     templateID: string
-  #        specifies the DOM element ID of the template to use.
-  #        takes precedence over templateURL and templateString
+  #        precedence over templateUrl
   #     controller: function or string
   #        specifies the controller to call against the scope.
   #        Should be a function or a string denoting the
@@ -109,7 +112,14 @@ class TabsProvider
       # TODO: validate that we have enough information to decide how to compile
       # tabs
 
-  setTabTypeFetcher: (@_tabTypeFetcher) ->
+  typeFetcherFactory: (@_typeFetcherFactory) ->
+
+  _reifyFetcher: ($injector) ->
+    if @_typeFetcherFactory?
+      @_tabTypeFetcher = $injector.invoke @_typeFetcherFactory
+      delete @_typeFetcherFactory
+      if typeof @_tabTypeFetcher isnt 'function'
+        throw new Error "Tab type fetcher must be a function"
 
 
 
@@ -119,13 +129,13 @@ class TabsService
                 @$q, @$injector) ->
 
   _getTabType: (id) ->
-    
+    @provider._reifyFetcher @$injector
+
     if @provider._tabTypes[id]?
       promise = @$q.when(@provider._tabTypes[id])
     else if @provider._tabTypeFetcher?
       deferred = @$q.defer()
-      injectables = {deferred: deferred, typeID: id}
-      @$injector.invoke @provider._tabTypeFetcher, null, injectables
+      @provider._tabTypeFetcher deferred, id
       @provider._tabTypes[id] = deferred.promise
       promise = deferred.promise
     else 
@@ -146,11 +156,22 @@ class TabsService
   _compileContent: (tab, parentScope, cb) ->
 
     if typeof (tab.type) is 'string'
-      @_getTabType(tab.type).then((type) => 
-        if !type?
-          throw new Error "Unrecognised tab type: " + tab.type
-        else
-          @__compileContent tab, parentScope, cb, type)
+      @_getTabType(tab.type).then(
+        (type) => 
+          if !type?
+            throw new Error "Unrecognised tab type: " + tab.type
+          else
+            @__compileContent tab, parentScope, cb, type
+        ,
+        (reason) ->
+          console.warn "Tab type not found: " + tab.type
+          console.warn "Reason: " + reason
+          type = {
+            templateString: "Tab type '#{tab.type}' not found because #{reason}"
+            scope: false
+          }
+          @__compileContent tab, parentScope, cb, type
+        )
     else
       @__compileContent tab, parentScope, cb, tab.type
 
@@ -167,11 +188,10 @@ class TabsService
       cb()
 
     # find the template
-    if type.templateID?
-      doCompile document.getElementById(type.templateID).innerHTML
-    else if type.templateString?
-      doCompile type.templateString
-    else if (url = type.templateURL)?
+    if type.template?
+      doCompile type.template
+
+    else if (url = type.templateUrl)?
       # look in template cache first
       if (cached = @$templateCache.get url)?
         doCompile cached
@@ -199,7 +219,12 @@ class TabsService
       throw new Error "no template supplied"
 
   newArea: (options) ->
-    new TabArea @, options
+    area = new TabArea @, options
+
+    window.addEventListener "beforeunload", ->
+      area._persist()
+
+    area
 
 
 class Tab extends Evented
@@ -218,19 +243,20 @@ class Tab extends Evented
 
   deferLoading: ->
     @loadingDeferred = true
+    @
 
   doneLoading: ->
-    @loading = false
-    @area._scope.$root.$$phase or @area._scope.$apply()
-    if not @closed
-      @trigger 'loaded'
+    if @loading
+      @loading = false
+      @area._scope.$root.$$phase or @area._scope.$apply()
+      if not @closed
+        @trigger 'loaded'
+    @
 
   close: (silent) ->
     if @closed
       throw new Error "Tab already closed"
-    else if not silent
-      @trigger "close"
-    else
+    else if silent or @autoClose
       removeFromArray @area._tabs, @
       removeFromArray @area._focusStack, @
 
@@ -250,21 +276,20 @@ class Tab extends Evented
         @trigger "closed"
 
         if @focused
-          if (len = @area._focusStack.length) isnt 0
-            @area._focusStack[len-1].focus()
-          else if @area._tabs.length isnt 0
-            @area._tabs[0].focus()
+          (lastItem(@area._focusStack) or lastItem(@area._tabs))?.focus()
 
           @focused = false
+    else
+      @trigger "close"
     @
 
   enableAutoClose: ->
-    if !@_offAutoClose?
-      @_offAutoClose = @on "close", => @close true
+    @autoClose = true
+    @
 
   disableAutoClose: ->
-    @_offAutoClose?()
-    delete @_offAutoClose
+    @autoClose = false
+    @
 
   focus: ->
     if @loading
@@ -287,6 +312,26 @@ class Tab extends Evented
       @trigger "focused"
     @
 
+  move: (toArea, idx) ->
+    removeFromArray @area._tabs, @
+
+    if toArea isnt @area
+      removeFromArray @area._focusStack, @
+      @area._persist()
+      toArea._contentPane.append @_elem
+      if @focused
+        (lastItem(@area._focusStack) or lastItem(@area._tabs))?.focus()
+      @area = toArea
+
+    idx = Math.min Math.max(0, idx), @area._tabs.length
+
+    @area._tabs.splice idx, 0, @
+    if @focused or @area._tabs.length is 1
+      @focused = false
+      @focus()
+
+    @area._persist()
+    @
 
 
 DEFAULT_TAB_AREA_OPTIONS =
@@ -318,9 +363,11 @@ class TabArea extends Evented
 
     # initiate loading of existing tabs
     @options.getExisting? (json) =>
+      json = json?.trim() or "[]" # allow empty string
       @_existingReady = true
       @_existingTabs = JSON.parse(json).map (tab) =>
         tab.options = @options.parseOptions tab.options
+        tab
       cb() for cb in @_existingReadyQueue
       @_existingReadyQueue = []
 
@@ -341,20 +388,21 @@ class TabArea extends Evented
   # saves the junk to the place
   _persist: ->
     @options.persist? JSON.stringify @_tabs.map (tab) =>
-      type: tab.type
-      options: @options.transformOptions tab.options
-      active: !!tab.focused
+        type: tab.type
+        options: @options.transformOptions tab.options
+        focused: !!tab.focused
 
   # calls cb on existing tabs like {type, options, active}. if cb returns
   # true, automatically reloads tab by calling @load(type, options)
   handleExisting: (cb) ->
+    cb = cb or -> true
     if not @_existingReady
       @_existingReadyQueue.push => @handleExisting cb
     else
       for tab in @_existingTabs
         if cb tab
           loaded = @load tab.type, tab.options
-          loaded.focus() if tab.active
+          loaded.focus() if tab.focused
       @_persist()
     @
 

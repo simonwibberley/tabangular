@@ -1,18 +1,4 @@
 {
-  "name": "tabangular.js",
-  "description": "Tabs for angular",
-  "version": "0.0.1",
-  "homepage": "http://github.com/ds300",
-  "author": {
-    "name": "David Sheldrick",
-    "email": "djsheldrick@gmail.com",
-    "url": "http://github.com/ds300"
-  },
-  "license": "Apache 2.0",
-  "keywords": [
-    "angular",
-    "tabs"
-  ],
   "dependencies": {
     "coffee-script": "~1.7.1"
   },
