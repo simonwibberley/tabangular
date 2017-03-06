@@ -150,9 +150,11 @@ class TabsService
     if ctrl?
       @$controller(ctrl, {$scope: tab._scope, Tab: tab})
     tab._elem = @$compile(templateString.trim())(tab._scope)
-    tab._elem.addClass "tabangular-hide"
-
-
+    if tab.focused 
+      tab._elem.removeClass "tabangular-hide"
+    else 
+      tab._elem.addClass "tabangular-hide"
+    
   _compileContent: (tab, parentScope, cb) ->
 
     if typeof (tab.type) is 'string'
@@ -255,10 +257,8 @@ class Tab extends Evented
 
   close: (silent) ->
     if @closed
-      #throw new Error "Tab already closed"
-    else if not silent
-      @trigger "close"
-    else
+      throw new Error "Tab already closed"
+    else if silent or @autoClose 
       removeFromArray @area._tabs, @
       removeFromArray @area._focusStack, @
 
@@ -281,7 +281,8 @@ class Tab extends Evented
           (lastItem(@area._focusStack) or lastItem(@area._tabs))?.focus()
 
           @focused = false
-
+    else 
+      @trigger "close"
     @
 
   enableAutoClose: ->
@@ -306,7 +307,7 @@ class Tab extends Evented
       
       @focused = true
 
-      @_elem.removeClass "tabangular-hide"
+      @_elem?.removeClass "tabangular-hide"
       removeFromArray @area._focusStack, @
       @area._focusStack.push @
       @area._persist()
